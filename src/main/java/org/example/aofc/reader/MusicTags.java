@@ -1,4 +1,4 @@
-package org.example.aofc;
+package org.example.aofc.reader;
 
 public enum MusicTags {
   ALBUM,

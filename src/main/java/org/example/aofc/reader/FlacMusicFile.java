@@ -1,9 +1,8 @@
-package org.example.aofc.files;
+package org.example.aofc.reader;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.example.aofc.MusicTags;
-import org.example.aofc.files.exception.MusicFileException;
+import org.example.aofc.reader.exception.MusicFileException;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
@@ -13,11 +12,11 @@ import java.io.File;
 import java.util.Optional;
 
 @Data
-public class FlacFile implements IMusicFile {
+public class FlacMusicFile implements IMusicFile {
   private final String path;
   private final AudioFile audioFile;
 
-  public FlacFile(@NonNull String path) {
+  public FlacMusicFile(@NonNull String path) {
     try {
     this.path = path;
     this.audioFile = AudioFileIO.read(new File(path));

@@ -1,10 +1,9 @@
-package org.example.aofc.files;
+package org.example.aofc.reader;
 
 import com.mpatric.mp3agic.Mp3File;
 import lombok.Data;
 import lombok.NonNull;
-import org.example.aofc.MusicTags;
-import org.example.aofc.files.exception.MusicFileException;
+import org.example.aofc.reader.exception.MusicFileException;
 
 import java.util.Optional;
 

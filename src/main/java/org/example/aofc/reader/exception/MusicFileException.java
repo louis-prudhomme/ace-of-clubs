@@ -1,4 +1,4 @@
-package org.example.aofc.files.exception;
+package org.example.aofc.reader.exception;
 
 public class MusicFileException extends RuntimeException {
   public MusicFileException() {
