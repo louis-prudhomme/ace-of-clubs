@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NonNull;
 import org.example.aofc.reader.IMusicFile;
 import org.example.aofc.reader.MusicFileFactory;
+import org.example.aofc.utils.DateUtils;
 import org.example.aofc.utils.FileUtils;
 
 @Data
@@ -19,7 +20,7 @@ public class Transponder {
     return String.format(
         "%s/%s – %s/%s.%s",
         file.getAlbumArtistTag().orElseThrow(),
-        file.getDateTag().orElseThrow(),
+        DateUtils.getDate(file.getDateTag().orElseThrow()).orElseThrow(),
         file.getAlbumTag().orElseThrow(),
         file.getTitleTag().orElseThrow(),
         FileUtils.getExtension(path).orElseThrow());
