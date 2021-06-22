@@ -33,6 +33,7 @@ public class Mp3MusicFile implements IMusicFile {
       case ARTIST -> audioFile.getId3v2Tag().getArtist();
       case DATE -> audioFile.getId3v2Tag().getDate();
       case TITLE -> audioFile.getId3v2Tag().getTitle();
+      case TRACK -> audioFile.getId3v2Tag().getTrack();
     });
   }
 
@@ -42,6 +43,7 @@ public class Mp3MusicFile implements IMusicFile {
       case ALBUM_ARTIST, ARTIST -> audioFile.getId3v1Tag().getArtist();
       case DATE -> audioFile.getId3v1Tag().getYear();
       case TITLE -> audioFile.getId3v1Tag().getTitle();
+      case TRACK -> audioFile.getId3v1Tag().getTrack();
     });
   }
 }

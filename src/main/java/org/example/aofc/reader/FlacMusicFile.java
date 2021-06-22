@@ -31,6 +31,7 @@ public class FlacMusicFile implements IMusicFile {
       case ARTIST -> audioFile.getTag().getFields(FieldKey.ARTIST);
       case DATE -> audioFile.getTag().getFields(FieldKey.YEAR);
       case TITLE -> audioFile.getTag().getFields(FieldKey.TITLE);
+      case TRACK -> audioFile.getTag().getFields(FieldKey.TRACK);
     }).map(tagFields -> tagFields.get(0)).map(TagField::toString);
   }
 }

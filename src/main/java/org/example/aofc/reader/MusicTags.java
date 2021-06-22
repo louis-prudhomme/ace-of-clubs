@@ -5,5 +5,6 @@ public enum MusicTags {
   ALBUM_ARTIST,
   ARTIST,
   DATE,
-  TITLE
+  TITLE,
+  TRACK
 }

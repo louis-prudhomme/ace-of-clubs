@@ -25,6 +25,11 @@ public interface IMusicFile {
   }
 
   @NonNull
+  default Optional<String> getTrackTag() {
+    return getTag(MusicTags.TRACK);
+  }
+
+  @NonNull
   default Optional<String> getDateTag() {
     return getTag(MusicTags.DATE);
   }

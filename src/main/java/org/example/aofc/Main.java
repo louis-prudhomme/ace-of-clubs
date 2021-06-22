@@ -1,18 +1,22 @@
 package org.example.aofc;
 
+import org.example.aofc.scrapper.Scrapper;
 import org.example.aofc.utils.LoggerConfig;
 import org.example.aofc.writer.Transponder;
 
-import java.util.List;
+import java.nio.file.Path;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException {
     LoggerConfig.ConfigureLogger();
 
-    List.of("D:/hella/Downloads/To Victory.flac", "D:/hella/Downloads/03 Je suis d'ailleurs.mp3")
-        .stream()
-        .map(Transponder::new)
-        .map(Transponder::getOfficialRelativePath)
-        .forEach(System.out::println);
+    var pool = ForkJoinPool.commonPool();
+    var scrapper = new Scrapper(pool, Path.of("D:/hella/Downloads"));
+    var transponder = new Transponder();
+
+    scrapper.subscribe(transponder);
+    pool.awaitTermination(30, TimeUnit.SECONDS);
   }
 }
