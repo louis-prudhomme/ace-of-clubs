@@ -12,11 +12,14 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 
 @RequiredArgsConstructor
 public class Scrapper implements Flow.Publisher<String> {
   private final ExecutorService executor;
   private final Path path;
+  private final Function<String, Boolean> filterCriteria;
+
   private boolean subscribed;
 
   @Override
@@ -24,7 +27,7 @@ public class Scrapper implements Flow.Publisher<String> {
     if (subscribed) subscriber.onError(new IllegalStateException()); // only one allowed
     else {
       subscribed = true;
-      subscriber.onSubscribe(new MusicFileSubscription(subscriber, executor, path));
+      subscriber.onSubscribe(new MusicFileSubscription(subscriber, executor, path, filterCriteria));
     }
   }
 
@@ -33,6 +36,7 @@ public class Scrapper implements Flow.Publisher<String> {
     private final Flow.Subscriber<? super String> subscriber;
     private final ExecutorService executor;
     private final Path path;
+    private final Function<String, Boolean> filterCriteria;
 
     private final List<Future<?>> futures = new ArrayList<>(); // to allow cancellation
     private boolean completed;
@@ -46,10 +50,12 @@ public class Scrapper implements Flow.Publisher<String> {
         Files.walk(path, FileVisitOption.FOLLOW_LINKS)
             .filter(Files::isRegularFile)
             .map(Path::toString)
+            .filter(filterCriteria::apply)
             .forEach(this::produce);
       } catch (IOException e) {
         e.printStackTrace();
       }
+      completed = true;
     }
 
     private synchronized void produce(@NonNull String path) {
