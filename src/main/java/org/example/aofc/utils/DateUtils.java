@@ -3,20 +3,20 @@ package org.example.aofc.utils;
 import lombok.NonNull;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 public class DateUtils {
   private static final String[] SEPARATORS = new String[] {"-", "/"};
 
-  public static @NonNull Optional<String> getDate(@NonNull String date) {
-    if (date.length() == 4) return Optional.of(date);
+  public static @NonNull String getDate(@NonNull String date) {
+    if (date.length() == 4) return date;
     return getYear(date);
   }
 
-  private static @NonNull Optional<String> getYear(@NonNull String date) {
+  private static @NonNull String getYear(@NonNull String date) {
     return Arrays.stream(date.split(getSeparator(date)))
         .filter(piece -> piece.length() == 4)
-        .findFirst();
+        .findFirst()
+        .orElseThrow();
   }
 
   private static @NonNull String getSeparator(@NonNull String date) {
