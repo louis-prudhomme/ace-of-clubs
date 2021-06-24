@@ -1,17 +1,18 @@
 package org.example.aofc;
 
 import lombok.NonNull;
-import org.example.aofc.scrapper.Scrapper;
+import org.example.aofc.scrapper.Flagger;
+import org.example.aofc.transponder.Transponder;
+import org.example.aofc.utils.CheckPathMode;
+import org.example.aofc.utils.FileUtils;
 import org.example.aofc.utils.LoggerConfig;
-import org.example.aofc.writer.Transponder;
+import org.example.aofc.writer.MoveMode;
+import org.example.aofc.writer.Mover;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -19,7 +20,13 @@ import java.util.concurrent.TimeUnit;
 @Command(name = "aofc", mixinStandardHelpOptions = true, description = "Music file sorter.")
 public class AofC implements Callable<Integer> {
   @Parameters(index = "0", defaultValue = ".", description = "Path of the folder to index and sort")
-  private String pathArgument;
+  private String originPathArg;
+
+  @Parameters(
+      index = "1",
+      defaultValue = "./Sorted/",
+      description = "Path of the folder where to move the music files")
+  private String destinationPathArg;
 
   @Option(
       names = {"-t", "--timeout"},
@@ -29,34 +36,26 @@ public class AofC implements Callable<Integer> {
   // todo add condition engine
   // todo add threading engine
   // todo add naming engine
-  // todo add destination path
-
-  private Path checkPath(@NonNull String given) {
-    try {
-      var path = Path.of(given);
-      if (!Files.isDirectory(path))
-        throw new IllegalArgumentException(
-            String.format("%s is not a directory.", path.toString()));
-      return path;
-    } catch (InvalidPathException e) {
-      throw new IllegalArgumentException(String.format("%s is not a valid path", given));
-    }
-  }
 
   @Override
   public Integer call() throws InterruptedException {
-    var targetPath = checkPath(pathArgument);
+    var originPath = FileUtils.checkPath(this.originPathArg);
+    var destinationPath = FileUtils.checkPath(this.destinationPathArg, CheckPathMode.OSEF);
+
     LoggerConfig.ConfigureLogger();
 
     var pool = ForkJoinPool.commonPool();
-    var scrapper = new Scrapper(pool, targetPath, s -> true);
+    var scrapper = new Flagger(pool, originPath, p -> true);
     var transponder = new Transponder();
+    var mover = new Mover(destinationPath, MoveMode.REPLACE_EXISTING);
 
+    transponder.subscribe(mover);
     scrapper.subscribe(transponder);
+
     return pool.awaitTermination(timeout, TimeUnit.SECONDS) ? 0 : 1;
   }
 
-  public static void main(String[] args) {
+  public static void main(@NonNull String[] args) {
     System.exit(new CommandLine(new AofC()).execute(args));
   }
 }

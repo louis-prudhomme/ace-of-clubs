@@ -2,9 +2,12 @@ package org.example.aofc.reader;
 
 import lombok.NonNull;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 public interface IMusicFile {
+  @NonNull
+  Path getPath();
 
   @NonNull
   Optional<String> getTag(@NonNull MusicTags key);

@@ -5,14 +5,15 @@ import lombok.Data;
 import lombok.NonNull;
 import org.example.aofc.reader.exception.MusicFileException;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 @Data
 public class Mp3MusicFile implements IMusicFile {
-  private final String path;
+  private final Path path;
   private final Mp3File audioFile;
 
-  public Mp3MusicFile(@NonNull String path) {
+  public Mp3MusicFile(@NonNull Path path) {
     this.path = path;
     try {
       this.audioFile = new Mp3File(path);

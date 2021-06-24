@@ -8,18 +8,18 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.TagField;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Optional;
 
 @Data
 public class FlacMusicFile implements IMusicFile {
-  private final String path;
+  private final Path path;
   private final AudioFile audioFile;
 
-  public FlacMusicFile(@NonNull String path) {
+  public FlacMusicFile(@NonNull Path path) {
     try {
     this.path = path;
-    this.audioFile = AudioFileIO.read(new File(path));
+    this.audioFile = AudioFileIO.read(path.toFile());
     } catch (Exception e) { throw new MusicFileException(e);}
   }
 
