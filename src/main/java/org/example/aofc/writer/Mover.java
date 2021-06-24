@@ -30,6 +30,8 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
     Path finalDestination = destination.resolve(paths.getRight());
     Files.createDirectories(finalDestination.getParent());
 
+    System.out.println(paths);
+
     if (mode == MoveMode.REPLACE_EXISTING)
       Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
     else Files.move(paths.getLeft(), finalDestination);

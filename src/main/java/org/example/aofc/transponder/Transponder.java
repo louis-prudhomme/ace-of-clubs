@@ -3,12 +3,10 @@ package org.example.aofc.transponder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.example.aofc.formatter.SpecificationFormatter;
 import org.example.aofc.reader.IMusicFile;
 import org.example.aofc.reader.MusicFileFactory;
-import org.example.aofc.utils.DateUtils;
-import org.example.aofc.utils.FileUtils;
 import org.example.aofc.utils.SyncingQueue;
 
 import java.nio.file.Path;
@@ -23,26 +21,13 @@ public class Transponder implements Flow.Processor<Path, Pair<Path, Path>> {
 
   private final MusicFileFactory factory = new MusicFileFactory();
   private final SyncingQueue<Pair<Path, Path>> queue = new SyncingQueue<>();
+  private final SpecificationFormatter formatter;
 
   private Flow.Subscription subscription;
   private Flow.Subscriber<? super Pair<Path, Path>> subscriber;
 
   private @NonNull Path getRelativePath(@NonNull IMusicFile file) {
-    var sanitizer =
-        new Sanitizer(
-            file.getAlbumArtistTag(),
-            file.getDateTag().map(DateUtils::getDate),
-            file.getAlbumTag(),
-            file.getTrackTag().map(s -> StringUtils.leftPad(s, TRACK_PAD_SIZE, TRACK_PAD_CHAR)),
-            file.getTitleTag(),
-            FileUtils.getExtension(file.getPath()));
-
-    return Path.of(
-        String.format(
-            "%s/%s – %s/%s – %s.%s",
-            (Object[])
-                sanitizer.santizeBulk())); // todo allow custom formatting in command line option
-    // todo refactor fkin ugly ass cast
+    return Path.of(formatter.format(file));
   }
 
   @Override

@@ -10,10 +10,6 @@ import java.util.Optional;
 
 public class FileUtils {
   private static final List<String> MUSIC_EXTENSIONS = List.of("mp3", "flac");
-  private static final String REPLACEMENT_CHAR = "_"; // todo add to commandline options
-  private static final String[] FORBIDDEN_CHARS = {
-    "/", "\\", "<", ">", "|", "\"", "*", "\n", "\t", ".", "[", "]", ",", ";", ":"
-  };
 
   public static @NonNull Optional<String> getExtension(@NonNull Path filename) {
     return Optional.of(filename)
@@ -25,13 +21,6 @@ public class FileUtils {
 
   public static boolean isMusicFile(@NonNull Path path) {
     return getExtension(path).map(MUSIC_EXTENSIONS::contains).orElse(false);
-  }
-
-  public static @NonNull String sanitize(@NonNull String wouldBePathPiece) {
-    String res = wouldBePathPiece;
-    for (var forbidden : FORBIDDEN_CHARS)
-      res = wouldBePathPiece.replace(forbidden, REPLACEMENT_CHAR);
-    return res.trim();
   }
 
   public static Path checkPath(@NonNull String given) {
