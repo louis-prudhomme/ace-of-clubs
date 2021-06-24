@@ -52,7 +52,9 @@ public class AofC implements Callable<Integer> {
     transponder.subscribe(mover);
     scrapper.subscribe(transponder);
 
-    return pool.awaitTermination(timeout, TimeUnit.SECONDS) ? 0 : 1;
+    boolean quiescent = pool.awaitQuiescence(timeout, TimeUnit.SECONDS);
+    pool.awaitTermination(1, TimeUnit.MILLISECONDS);
+    return quiescent ? 0 : 1;
   }
 
   public static void main(@NonNull String[] args) {
