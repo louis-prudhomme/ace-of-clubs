@@ -2,27 +2,31 @@ package org.example.aofc.utils;
 
 import lombok.NonNull;
 
-import java.util.Arrays;
+import java.util.Optional;
 
 public class DateUtils {
   private static final String[] SEPARATORS = new String[] {"-", "/"};
 
-  public static @NonNull String getDate(@NonNull String date) {
-    if (date.length() == 4) return date;
+  public static @NonNull Optional<String> getProperDate(@NonNull String date) {
+    if (date.length() == 4) return Optional.of(date);
     return getYear(date);
   }
 
-  private static @NonNull String getYear(@NonNull String date) {
-    return Arrays.stream(date.split(getSeparator(date)))
-        .filter(piece -> piece.length() == 4)
-        .findFirst()
-        .orElseThrow();
+  private static @NonNull Optional<String> getYear(@NonNull String date) {
+    var datePieces = date.split(getSeparator(date));
+
+    return datePieces.length > 1 && datePieces[datePieces.length - 1].length() == 4
+        ? Optional.of(datePieces[datePieces.length - 1])
+        : datePieces[datePieces.length - 1].length() == 2
+            ? Optional.of(String.format("20%s", datePieces[datePieces.length - 1]))
+            : Optional.empty();
   }
 
   private static @NonNull String getSeparator(@NonNull String date) {
-    for (String sep : SEPARATORS) {
+    for (var sep : SEPARATORS) {
       if (date.contains(sep)) return sep;
     }
+
     throw new RuntimeException(date);
   }
 }

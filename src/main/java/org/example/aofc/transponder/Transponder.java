@@ -16,8 +16,6 @@ import java.util.concurrent.Flow;
 @EqualsAndHashCode(callSuper = false)
 public class Transponder implements Flow.Processor<Path, Pair<Path, Path>> {
   private static final int REQUEST_SIZE = 25;
-  private static final int TRACK_PAD_SIZE = 3;
-  private static final String TRACK_PAD_CHAR = "0";
 
   private final MusicFileFactory factory = new MusicFileFactory();
   private final SyncingQueue<Pair<Path, Path>> queue = new SyncingQueue<>();
@@ -27,6 +25,7 @@ public class Transponder implements Flow.Processor<Path, Pair<Path, Path>> {
   private Flow.Subscriber<? super Pair<Path, Path>> subscriber;
 
   private @NonNull Path getRelativePath(@NonNull IMusicFile file) {
+    var t = formatter.format(file);
     return Path.of(formatter.format(file));
   }
 
