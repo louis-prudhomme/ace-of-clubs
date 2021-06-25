@@ -23,21 +23,21 @@ public class SyncingQueue<T> {
     return Optional.of(res);
   }
 
-  public synchronized Optional<T> peek() {
+  public Optional<T> peek() {
     if (underlying.isEmpty()) return Optional.empty();
 
     return Optional.of(underlying.get(0));
   }
 
-  public synchronized int size() {
+  public int size() {
     return underlying.size();
   }
 
-  public synchronized boolean isEmpty() {
+  public boolean isEmpty() {
     return underlying.isEmpty();
   }
 
-  public synchronized List<T> toList() {
+  public List<T> toList() {
     return List.copyOf(this.underlying);
   }
 }

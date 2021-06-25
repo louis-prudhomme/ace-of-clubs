@@ -66,13 +66,18 @@ public class SpecificationFormatter {
 
   public @NonNull String format(@NonNull IMusicFile file) {
     // todo orElseThrow
-    return String.format(
-        specification,
-        providers.stream()
-            .map(provider -> provider.apply(file))
-            .map(Optional::orElseThrow)
-            .map(sanitizer::sanitize)
-            .toArray(Object[]::new)); // todo refactor fkin ugly ass cast
+    try {
+      return String.format(
+          specification,
+          providers.stream()
+              .map(provider -> provider.apply(file))
+              .map(Optional::orElseThrow)
+              .map(sanitizer::sanitize)
+              .toArray(Object[]::new)); // todo refactor fkin ugly ass cast
+    } catch (Exception e) {
+      e.printStackTrace(); // todo strengthen this
+      throw new RuntimeException(e);
+    }
   }
 
   private void checkEvenSpecOrThrow() throws UnevenSpecificationException {

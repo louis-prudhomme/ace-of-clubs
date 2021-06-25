@@ -3,7 +3,6 @@ package org.example.aofc.scrapper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.example.aofc.utils.SyncingQueue;
 
 import java.io.IOException;
@@ -19,8 +18,7 @@ public class Scrapper implements Runnable {
   @Getter private final SyncingQueue<Path> queue = new SyncingQueue<>();
   private final Path origin;
   private final Function<Path, Boolean> filterCriteria;
-
-  @Getter private boolean completed = false;
+  private final Runnable completionCallback;
 
   @Override
   public void run() {
@@ -37,13 +35,12 @@ public class Scrapper implements Runnable {
                 }
               });
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(e); // todo
     } finally {
-      completed = true;
+      completionCallback.run();
     }
   }
 
-  @SneakyThrows
   private void produce(@NonNull Path item) throws InterruptedException {
     synchronized (queue) {
       while (queue.size() > PRODUCING_RATE) queue.wait();

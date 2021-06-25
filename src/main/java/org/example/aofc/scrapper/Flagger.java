@@ -17,6 +17,7 @@ public class Flagger implements Flow.Publisher<Path> {
   private final Path origin;
   private final Function<Path, Boolean> filterCriteria;
 
+  private MusicFileSubscription subscription;
   private boolean subscribed;
 
   @Override
@@ -24,8 +25,8 @@ public class Flagger implements Flow.Publisher<Path> {
     if (subscribed) subscriber.onError(new IllegalStateException()); // only one allowed
     else {
       subscribed = true;
-      subscriber.onSubscribe(
-          new MusicFileSubscription(subscriber, executor, origin, filterCriteria));
+      subscription = new MusicFileSubscription(subscriber, executor, origin, filterCriteria);
+      subscriber.onSubscribe(subscription);
     }
   }
 
@@ -36,6 +37,7 @@ public class Flagger implements Flow.Publisher<Path> {
 
     private final List<Future<?>> futures = new ArrayList<>(); // to cancellation
     private final Thread scrapperThread;
+    private boolean completed = false;
 
     public MusicFileSubscription(
         @NonNull Flow.Subscriber<? super Path> subscriber,
@@ -45,22 +47,18 @@ public class Flagger implements Flow.Publisher<Path> {
       this.subscriber = subscriber;
       this.executor = executor;
 
-      this.scrapper = new Scrapper(origin, filterCriteria);
+      this.scrapper = new Scrapper(origin, filterCriteria, () -> completed = true);
       this.scrapperThread = new Thread(this.scrapper);
       scrapperThread.start();
     }
 
-    private boolean isCompleted() {
-      return scrapper.isCompleted() && scrapper.getQueue().isEmpty();
-    }
-
     @Override
     public synchronized void request(long n) {
-      if (isCompleted()) return;
+      if (completed) return;
 
-      while (!isCompleted() && n != 0) {
+      while (!completed && n != 0) {
         synchronized (scrapper.getQueue()) {
-          while (scrapper.getQueue().isEmpty()) {
+          while (scrapper.getQueue().isEmpty() && !completed) {
             try {
               scrapper.getQueue().wait();
             } catch (InterruptedException e) {

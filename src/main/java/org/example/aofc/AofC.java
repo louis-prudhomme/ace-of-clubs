@@ -65,13 +65,13 @@ public class AofC implements Callable<Integer> {
 
     var pool = ForkJoinPool.commonPool();
     var scrapper = new Flagger(pool, originPath, p -> true);
-    var transponder = new Transponder(specification);
+    var transponder = new Transponder(specification, pool);
     var mover = new Mover(destinationPath, MoveMode.REPLACE_EXISTING);
 
     transponder.subscribe(mover);
     scrapper.subscribe(transponder);
 
-    return !pool.awaitQuiescence(timeout, TimeUnit.SECONDS) ? 0 : 1;
+    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS) ? 0 : 1;
   }
 
   public static void main(@NonNull String[] args) {

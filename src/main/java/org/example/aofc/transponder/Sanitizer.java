@@ -5,15 +5,18 @@ import lombok.NonNull;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class Sanitizer {
   @Getter private static final String REPLACEMENT_CHAR = "_"; // todo add to commandline options
-  private static final String[] FORBIDDEN_CHARS = {
-    "/", "\\", "<", ">", "|", "\"", "*", "\n", "\t", ".", "[", "]", ",", ";", ":"
-  };
   private static final String[] FORBIDDEN_CHARS_SPEC = {
-    "\\", "<", ">", "|", "\"", "*", "\n", "\t", "[", "]", ",", ";", ":"
+    "<", ">", "|", "\"", "*", "\n", "\t", "[", "]", "?", ",", ";", ":"
   };
+  private static final String[] EXTRA_FORBIDDEN_CHARS = {"/", "\\", "."};
+  private static final String[] FORBIDDEN_CHARS =
+      Stream.concat(Arrays.stream(FORBIDDEN_CHARS_SPEC), Arrays.stream(EXTRA_FORBIDDEN_CHARS))
+          .toArray(String[]::new);
+
   private final Optional<String>[] args;
 
   @SafeVarargs // todo chek fuk
@@ -23,8 +26,7 @@ public class Sanitizer {
 
   public @NonNull String sanitize(@NonNull String wouldBePathPiece) {
     String res = wouldBePathPiece;
-    for (var forbidden : FORBIDDEN_CHARS)
-      res = wouldBePathPiece.replace(forbidden, REPLACEMENT_CHAR);
+    for (var forbidden : FORBIDDEN_CHARS) res = res.replace(forbidden, REPLACEMENT_CHAR);
     return res.trim();
   }
 
