@@ -17,7 +17,6 @@ public class Flagger implements Flow.Publisher<Path> {
   private final Path origin;
   private final Function<Path, Boolean> filterCriteria;
 
-  private MusicFileSubscription subscription;
   private boolean subscribed;
 
   @Override
@@ -25,8 +24,8 @@ public class Flagger implements Flow.Publisher<Path> {
     if (subscribed) subscriber.onError(new IllegalStateException()); // only one allowed
     else {
       subscribed = true;
-      subscription = new MusicFileSubscription(subscriber, executor, origin, filterCriteria);
-      subscriber.onSubscribe(subscription);
+      subscriber.onSubscribe(
+          new MusicFileSubscription(subscriber, executor, origin, filterCriteria));
     }
   }
 
@@ -49,14 +48,14 @@ public class Flagger implements Flow.Publisher<Path> {
 
       this.scrapper = new Scrapper(origin, filterCriteria, () -> completed = true);
       this.scrapperThread = new Thread(this.scrapper);
-      scrapperThread.start();
+      this.scrapperThread.start();
     }
 
     @Override
     public synchronized void request(long n) {
       if (completed) return;
 
-      while (!completed && n != 0) {
+      while (!completed && n-- != 0) {
         synchronized (scrapper.getQueue()) {
           while (scrapper.getQueue().isEmpty() && !completed) {
             try {
@@ -67,7 +66,6 @@ public class Flagger implements Flow.Publisher<Path> {
           }
 
           produce(scrapper.getQueue().pop().orElseThrow());
-          n--;
           scrapper.getQueue().notify();
         }
       }
@@ -80,7 +78,7 @@ public class Flagger implements Flow.Publisher<Path> {
     @Override
     public synchronized void cancel() {
       scrapperThread.interrupt();
-      futures.forEach(future -> future.cancel(false));
+      futures.forEach(future -> future.cancel(true));
     }
   }
 }

@@ -3,6 +3,8 @@ package org.example.aofc.writer;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,6 +14,8 @@ import java.util.concurrent.Flow;
 
 @RequiredArgsConstructor
 public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
+  private final Logger logger = LoggerFactory.getLogger(getClass());
+
   private static final int INITIAL_REQUEST_SIZE = 25;
 
   private final Path destination;
@@ -35,22 +39,23 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
         Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
       else Files.move(paths.getLeft(), finalDestination);
 
+      logger.info(String.format("Moved %s", finalDestination.toString()));
     } catch (IOException e) {
-      e.printStackTrace();
+      onError(e);
     }
 
-    // if (!subscriptionCompleted)
     subscription.request(1);
   }
 
   @Override
   public void onError(@NonNull Throwable throwable) {
-    throwable.printStackTrace();
+    subscription.cancel();
+    logger.error(throwable.getMessage());
     throw new RuntimeException(throwable);
   }
 
   @Override
   public void onComplete() {
-    System.out.println("Transponder completed!");
+    logger.debug("Transponder completed");
   }
 }

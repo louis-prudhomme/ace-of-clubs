@@ -49,6 +49,7 @@ public class Mp3MusicFile implements IMusicFile {
       case ALBUM_ARTIST, ARTIST -> audioFile.getId3v1Tag().getArtist();
       case DATE -> audioFile.getId3v1Tag().getYear();
       case TITLE -> audioFile.getId3v1Tag().getTitle();
+//todo add disc
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
       case TRACK -> audioFile.getId3v1Tag().getTrack();
     });
