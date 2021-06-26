@@ -63,13 +63,7 @@ public class Transponder implements Flow.Processor<Path, Pair<Path, Path>> {
 
     try {
       var file = factory.make(path);
-      futures.add(
-          executor.submit(
-              () -> {
-                System.out.println(path);
-                subscriber.onNext(Pair.of(path, getRelativePath(file)));
-                System.out.println(path);
-              }));
+      futures.add(executor.submit(() -> subscriber.onNext(Pair.of(path, getRelativePath(file)))));
     } catch (MusicFileException e) {
       System.out.printf("%s was not a music file%n", path.getName(path.getNameCount() - 1));
     }
