@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -19,7 +20,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   private static final int INITIAL_REQUEST_SIZE = 25;
 
   private final Path destination;
-  private final MoveMode mode;
+  private final FileExistsMode mode;
 
   private Flow.Subscription subscription;
 
@@ -35,11 +36,20 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
     try {
       Files.createDirectories(finalDestination.getParent());
 
-      if (mode == MoveMode.REPLACE_EXISTING)
+      if (mode == FileExistsMode.REPLACE_EXISTING)
         Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
-      else Files.move(paths.getLeft(), finalDestination);
+      else {
+        try {
+          Files.move(paths.getLeft(), finalDestination);
+        } catch (FileAlreadyExistsException e) {
+          logger.error(
+              String.format(
+                  "%s already exists, skipping.",
+                  finalDestination.getName(finalDestination.getNameCount() - 1)));
+        }
+      }
 
-      logger.info(String.format("Moved %s", finalDestination.toString()));
+      logger.info(String.format("Moved %s.", finalDestination.toString()));
     } catch (IOException e) {
       onError(e);
     }
@@ -47,10 +57,14 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
     subscription.request(1);
   }
 
+  /**
+   * throw in this method is undefined behavior and will crash the worker ; printint stacktrace
+   * necessary for fast debug
+   */
   @Override
   public void onError(@NonNull Throwable throwable) {
-    subscription.cancel();
     logger.error(throwable.getMessage());
+    throwable.printStackTrace();
     throw new RuntimeException(throwable);
   }
 

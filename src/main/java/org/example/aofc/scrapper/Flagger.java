@@ -52,7 +52,7 @@ public class Flagger implements Flow.Publisher<Path> {
     }
 
     @Override
-    public synchronized void request(long n) {
+    public void request(long n) {
       if (completed) return;
 
       while (!completed && n-- != 0) {

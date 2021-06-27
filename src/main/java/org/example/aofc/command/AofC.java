@@ -1,12 +1,13 @@
 package org.example.aofc.command;
 
 import lombok.NonNull;
+import org.example.aofc.command.conversion.FileExistsModeArgConverter;
 import org.example.aofc.formatter.SpecificationFormatter;
 import org.example.aofc.scrapper.Flagger;
 import org.example.aofc.transponder.Transponder;
 import org.example.aofc.utils.CheckPathMode;
 import org.example.aofc.utils.FileUtils;
-import org.example.aofc.writer.MoveMode;
+import org.example.aofc.writer.FileExistsMode;
 import org.example.aofc.writer.Mover;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,27 +33,40 @@ public class AofC implements Callable<Integer> {
     java.util.logging.Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
   }
 
-  @Parameters(index = "0", defaultValue = ".", description = "Path of the folder to index and sort")
+  @Parameters(
+      index = "0",
+      defaultValue = ".",
+      description = "Path of the folder to index and sort.")
   private String originPathArg;
 
   @Parameters(
       index = "1",
       defaultValue = "./Sorted/",
-      description = "Path of the folder where to move the music files")
+      description = "Path of the folder where to move the music files.")
   private String destinationPathArg;
 
   @Option(
       names = {"-f", "--format"},
       description =
-          "Format of the file names, including any subfolders. Music file tags and data can be specified between [square brackets]. The default value is « [albart]/[date] – [album]/[track] – [title].[extension] »",
+          "Format of the file names, including any subfolders. Music file tags and data can be specified between [square brackets]. The default value is « ${DEFAULT-VALUE} »",
       defaultValue = "[albart]/[date] – [album]/[track] – [title].[extension]")
   private String specificationArg;
 
   @Option(
       names = {"-t", "--timeout"},
-      description = "How much time do you want to wait for completion (in seconds).",
-      defaultValue = "3")
+      description =
+          "How much time do you want to wait for completion (in seconds). Default: ${DEFAULT-VALUE}",
+      defaultValue = "30")
   private Integer timeout;
+
+  @Option(
+      names = {"-fem", "--file-exist-mode"},
+      description =
+          "What should the program do when a music file already exists. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
+      converter = FileExistsModeArgConverter.class,
+      completionCandidates = FileExistsMode.Enumeration.class,
+      defaultValue = "replace")
+  private FileExistsMode fileExistsMode;
   // todo add condition engine
   // todo add threading engine
   // todo add naming engine
@@ -68,18 +82,17 @@ public class AofC implements Callable<Integer> {
     logger.debug(String.format("Destination « %s »", destinationPath.toString()));
     logger.debug(String.format("Specification « %s »", specificationArg));
     logger.debug(String.format("Timeout %d seconds", timeout));
-
-    // LoggerConfig.configureLogger();
+    logger.debug(String.format("FileExistsMode « %s »", fileExistsMode.getArg()));
 
     var pool = ForkJoinPool.commonPool();
     var scrapper = new Flagger(pool, originPath, p -> true);
     var transponder = new Transponder(specification, pool);
-    var mover = new Mover(destinationPath, MoveMode.REPLACE_EXISTING);
+    var mover = new Mover(destinationPath, fileExistsMode);
 
     transponder.subscribe(mover);
     scrapper.subscribe(transponder);
 
-    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS) ? 0 : 1;
+    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS) ? 0 : 1; // fixme
   }
 
   public static void main(@NonNull String[] args) {
