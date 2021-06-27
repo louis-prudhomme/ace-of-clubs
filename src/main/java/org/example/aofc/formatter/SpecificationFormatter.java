@@ -4,7 +4,7 @@ import lombok.NonNull;
 import org.example.aofc.formatter.exception.MalformedSpecificationException;
 import org.example.aofc.formatter.exception.SpecificationParsingException;
 import org.example.aofc.formatter.exception.UnevenSpecificationException;
-import org.example.aofc.reader.IMusicFile;
+import org.example.aofc.reader.MusicFile;
 import org.example.aofc.reader.MusicTags;
 import org.example.aofc.transponder.Sanitizer;
 
@@ -16,9 +16,11 @@ import java.util.function.Function;
 public class SpecificationFormatter {
   private static final char MARKER_LEFT = '[';
   private static final char MARKER_RIGHT = ']';
+  private static final String EMPTY_TAG_PLACEHOLDER = "_";
 
   private final String rawSpec;
-  private final List<Function<IMusicFile, Optional<String>>> providers = new ArrayList<>();
+  private final List<Function<MusicFile, Optional<String>>> providers =
+      new ArrayList<>(); // todo not optional, directly strings
   private final Sanitizer sanitizer = new Sanitizer();
 
   private final String specification;
@@ -64,18 +66,17 @@ public class SpecificationFormatter {
     return specAssembler.toString();
   }
 
-  public @NonNull String format(@NonNull IMusicFile file) {
-    // todo orElseThrow
+  public @NonNull String format(@NonNull MusicFile file) {
     try {
       return String.format(
           specification,
           providers.stream()
               .map(provider -> provider.apply(file))
-              .map(Optional::orElseThrow)
+              .map(s -> s.orElse(EMPTY_TAG_PLACEHOLDER))
               .map(sanitizer::sanitize)
-              .toArray(Object[]::new)); // todo refactor fkin ugly ass cast
+              .toArray(Object[]::new));
     } catch (Exception e) {
-      e.printStackTrace(); // todo strengthen this
+      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }

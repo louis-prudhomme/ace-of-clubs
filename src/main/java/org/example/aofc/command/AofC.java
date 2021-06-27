@@ -4,8 +4,8 @@ import lombok.NonNull;
 import org.example.aofc.command.conversion.FileExistsModeArgConverter;
 import org.example.aofc.command.conversion.MoveModeArgConverter;
 import org.example.aofc.formatter.SpecificationFormatter;
-import org.example.aofc.scrapper.Flagger;
-import org.example.aofc.transponder.Transponder;
+import org.example.aofc.scrapper.FlaggerPublisher;
+import org.example.aofc.transponder.TransponderProcessor;
 import org.example.aofc.utils.CheckPathMode;
 import org.example.aofc.utils.FileUtils;
 import org.example.aofc.writer.FileExistsMode;
@@ -27,7 +27,12 @@ import java.util.logging.Level;
     name = "aofc",
     mixinStandardHelpOptions = true,
     description = "Music file sorter.",
-    version = "0.1")
+    version = "0.2",
+    exitCodeList = {
+      "0\t:\tSuccessful program execution.",
+      "2\t:\tArg parsing error.",
+      "1000\t:\tProgram timed out."
+    })
 public class AofC implements Callable<Integer> {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -50,14 +55,14 @@ public class AofC implements Callable<Integer> {
   @Option(
       names = {"-f", "--format"},
       description =
-          "Format of the file names, including any subfolders. Music file tags and data can be specified between [square brackets]. The default value is « ${DEFAULT-VALUE} »",
-      defaultValue = "[albart]/[date] – [album]/[track] – [title].[extension]")
+          "Format of the file names, including any subfolder. Music file tags and data can be specified between [square brackets]. The default value is « ${DEFAULT-VALUE} »",
+      defaultValue = "[albart]/[date] – [album]/[disc]-[track] – [title].[extension]")
   private String specificationArg;
 
   @Option(
       names = {"-t", "--timeout"},
       description =
-          "How much time do you want to wait for completion (in seconds). Default: ${DEFAULT-VALUE}",
+          "How much time do you want to wait for completion (in seconds). If zero, no timeout will be expected (the program will complete when all files are sorted). Default: ${DEFAULT-VALUE}",
       defaultValue = "30")
   private Integer timeout;
 
@@ -78,10 +83,6 @@ public class AofC implements Callable<Integer> {
       completionCandidates = MoveMode.Enumeration.class,
       defaultValue = "copy")
   private MoveMode moveMode;
-  // todo add condition engine
-  // todo add threading engine
-  // todo add naming engine
-  // todo add error engine
 
   @Override
   public Integer call() {
@@ -94,17 +95,20 @@ public class AofC implements Callable<Integer> {
     logger.debug(String.format("Specification « %s »", specificationArg));
     logger.debug(String.format("Timeout %d seconds", timeout));
     logger.debug(String.format("FileExistsMode « %s »", fileExistsMode.toString()));
-    logger.debug(String.format("MoveMove « %s »", moveMode.toString()));
+    logger.debug(String.format("MoveMode « %s »", moveMode.toString()));
 
     var pool = ForkJoinPool.commonPool();
-    var scrapper = new Flagger(pool, originPath, p -> true);
-    var transponder = new Transponder(specification, pool);
+    var scrapper = new FlaggerPublisher(pool, originPath);
+    var transponder = new TransponderProcessor(pool, specification);
     var mover = new Mover(destinationPath, fileExistsMode, moveMode);
 
     transponder.subscribe(mover);
     scrapper.subscribe(transponder);
+    mover.request();
 
-    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS) ? 0 : 1; // fixme
+    if (timeout <= 0) timeout = Integer.MAX_VALUE;
+
+    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS) ? 0 : 1000;
   }
 
   public static void main(@NonNull String[] args) {

@@ -11,13 +11,14 @@ import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.TagException;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
 @Data
-public class FlacMusicFile implements IMusicFile {
+public class FlacMusicFile implements MusicFile {
   private final Path path;
   private final AudioFile audioFile;
 
@@ -25,23 +26,31 @@ public class FlacMusicFile implements IMusicFile {
     try {
     this.path = path;
     this.audioFile = AudioFileIO.read(path.toFile());
-    } catch (IOException | CannotReadException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) { throw new MusicFileException(e);}
+    } catch (IOException | CannotReadException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
+      e.printStackTrace();
+      throw new MusicFileException(e);
+    }
   }
 
   @Override
   public @NonNull Optional<String> getTag(@NonNull MusicTags key) {
     return Optional.ofNullable(switch (key) {
       case ALBUM -> extractTag(audioFile, FieldKey.ALBUM);
-      case ALBUM_ARTIST -> extractTag(audioFile,FieldKey.ALBUM_ARTIST);
-      case ARTIST -> extractTag(audioFile,FieldKey.ARTIST);
-      case DATE -> extractTag(audioFile,FieldKey.YEAR);
-      case TITLE -> extractTag(audioFile,FieldKey.TITLE);
+      case ALBUM_ARTIST -> extractTag(audioFile, FieldKey.ALBUM_ARTIST);
+      case ARTIST -> extractTag(audioFile, FieldKey.ARTIST);
+      case DATE -> extractTag(audioFile, FieldKey.YEAR);
+      case TITLE -> extractTag(audioFile, FieldKey.TITLE);
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
-      case TRACK -> extractTag(audioFile,FieldKey.TRACK);
+      case TRACK -> extractTag(audioFile, FieldKey.TRACK);
+      case DISC -> extractTag(audioFile, FieldKey.DISC_NO);
     });
   }
 
-  private @NonNull String extractTag(@NonNull AudioFile tag, @NonNull FieldKey key) {
-    return tag.getTag().getFields(key).get(0).toString();
+  private @Nullable String extractTag(@NonNull AudioFile tag, @NonNull FieldKey key) {
+    try {return tag.getTag().getFields(key).get(0).toString();
+      } catch (IndexOutOfBoundsException e) {
+      // todo log
+      return null;
+    }
   }
 }

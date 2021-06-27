@@ -17,7 +17,7 @@ import java.util.concurrent.Flow;
 public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private static final int INITIAL_REQUEST_SIZE = 25;
+  private static final int INITIAL_REQUEST_SIZE = 5;
 
   private final Path destination;
   private final FileExistsMode fileExistsMode;
@@ -27,7 +27,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
 
   @Override
   public void onSubscribe(@NonNull Flow.Subscription subscription) {
-    (this.subscription = subscription).request(INITIAL_REQUEST_SIZE);
+    this.subscription = subscription;
   }
 
   @Override
@@ -54,7 +54,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
         logFileAlreadyExists(finalDestination);
       }
 
-    logger.info(String.format("Moved %s.", finalDestination.toString()));
+    logger.debug(String.format("Moved %s.", finalDestination.toString()));
   }
 
   private void copyFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)
@@ -68,7 +68,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
         logFileAlreadyExists(finalDestination);
       }
 
-    logger.info(String.format("Copied %s.", finalDestination.toString()));
+    logger.debug(String.format("Copied %s.", finalDestination.toString()));
   }
 
   private void logFileAlreadyExists(@NonNull Path path) {
@@ -90,5 +90,9 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   @Override
   public void onComplete() {
     logger.debug("Transponder completed");
+  }
+
+  public void request() {
+    this.subscription.request(INITIAL_REQUEST_SIZE);
   }
 }

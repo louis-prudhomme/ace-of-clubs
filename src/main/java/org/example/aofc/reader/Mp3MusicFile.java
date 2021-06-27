@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 @Data
-public class Mp3MusicFile implements IMusicFile {
+public class Mp3MusicFile implements MusicFile {
   private final Path path;
   private final Mp3File audioFile;
 
@@ -40,6 +40,7 @@ public class Mp3MusicFile implements IMusicFile {
       case TITLE -> audioFile.getId3v2Tag().getTitle();
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
       case TRACK -> audioFile.getId3v2Tag().getTrack();
+      case DISC -> null;
     });
   }
 
@@ -49,9 +50,9 @@ public class Mp3MusicFile implements IMusicFile {
       case ALBUM_ARTIST, ARTIST -> audioFile.getId3v1Tag().getArtist();
       case DATE -> audioFile.getId3v1Tag().getYear();
       case TITLE -> audioFile.getId3v1Tag().getTitle();
-//todo add disc
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
       case TRACK -> audioFile.getId3v1Tag().getTrack();
+      case DISC -> null;
     });
   }
 }

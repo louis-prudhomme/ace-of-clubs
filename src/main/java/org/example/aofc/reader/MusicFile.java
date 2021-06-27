@@ -5,7 +5,7 @@ import lombok.NonNull;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public interface IMusicFile {
+public interface MusicFile {
   @NonNull
   Path getPath();
 
@@ -30,6 +30,11 @@ public interface IMusicFile {
   @NonNull
   default Optional<String> getTrackTag() {
     return getTag(MusicTags.TRACK);
+  }
+
+  @NonNull
+  default Optional<String> getDiscTag() {
+    return getTag(MusicTags.DISC);
   }
 
   @NonNull

@@ -37,7 +37,6 @@
                     <target>15</target>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 
