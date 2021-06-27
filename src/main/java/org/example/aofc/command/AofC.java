@@ -2,12 +2,14 @@ package org.example.aofc.command;
 
 import lombok.NonNull;
 import org.example.aofc.command.conversion.FileExistsModeArgConverter;
+import org.example.aofc.command.conversion.MoveModeArgConverter;
 import org.example.aofc.formatter.SpecificationFormatter;
 import org.example.aofc.scrapper.Flagger;
 import org.example.aofc.transponder.Transponder;
 import org.example.aofc.utils.CheckPathMode;
 import org.example.aofc.utils.FileUtils;
 import org.example.aofc.writer.FileExistsMode;
+import org.example.aofc.writer.MoveMode;
 import org.example.aofc.writer.Mover;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +69,15 @@ public class AofC implements Callable<Integer> {
       completionCandidates = FileExistsMode.Enumeration.class,
       defaultValue = "replace")
   private FileExistsMode fileExistsMode;
+
+  @Option(
+      names = {"-mm", "--move-mode"},
+      description =
+          "Whether the program should copy or move the files. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
+      converter = MoveModeArgConverter.class,
+      completionCandidates = MoveMode.Enumeration.class,
+      defaultValue = "copy")
+  private MoveMode moveMode;
   // todo add condition engine
   // todo add threading engine
   // todo add naming engine
@@ -82,12 +93,13 @@ public class AofC implements Callable<Integer> {
     logger.debug(String.format("Destination « %s »", destinationPath.toString()));
     logger.debug(String.format("Specification « %s »", specificationArg));
     logger.debug(String.format("Timeout %d seconds", timeout));
-    logger.debug(String.format("FileExistsMode « %s »", fileExistsMode.getArg()));
+    logger.debug(String.format("FileExistsMode « %s »", fileExistsMode.toString()));
+    logger.debug(String.format("MoveMove « %s »", moveMode.toString()));
 
     var pool = ForkJoinPool.commonPool();
     var scrapper = new Flagger(pool, originPath, p -> true);
     var transponder = new Transponder(specification, pool);
-    var mover = new Mover(destinationPath, fileExistsMode);
+    var mover = new Mover(destinationPath, fileExistsMode, moveMode);
 
     transponder.subscribe(mover);
     scrapper.subscribe(transponder);

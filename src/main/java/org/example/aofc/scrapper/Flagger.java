@@ -71,12 +71,12 @@ public class Flagger implements Flow.Publisher<Path> {
       }
     }
 
-    private synchronized void produce(@NonNull Path path) {
+    private void produce(@NonNull Path path) {
       futures.add(executor.submit(() -> subscriber.onNext(path)));
     }
 
     @Override
-    public synchronized void cancel() {
+    public void cancel() {
       scrapperThread.interrupt();
       futures.forEach(future -> future.cancel(true));
     }

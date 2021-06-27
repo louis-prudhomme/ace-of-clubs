@@ -20,7 +20,8 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   private static final int INITIAL_REQUEST_SIZE = 25;
 
   private final Path destination;
-  private final FileExistsMode mode;
+  private final FileExistsMode fileExistsMode;
+  private final MoveMode moveMode;
 
   private Flow.Subscription subscription;
 
@@ -32,29 +33,47 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   @Override
   public void onNext(@NonNull Pair<Path, Path> paths) {
     var finalDestination = destination.resolve(paths.getRight());
-
     try {
       Files.createDirectories(finalDestination.getParent());
-
-      if (mode == FileExistsMode.REPLACE_EXISTING)
-        Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
-      else {
-        try {
-          Files.move(paths.getLeft(), finalDestination);
-        } catch (FileAlreadyExistsException e) {
-          logger.error(
-              String.format(
-                  "%s already exists, skipping.",
-                  finalDestination.getName(finalDestination.getNameCount() - 1)));
-        }
-      }
-
-      logger.info(String.format("Moved %s.", finalDestination.toString()));
+      if (moveMode == MoveMode.MOVE) moveFile(finalDestination, paths);
+      else copyFile(finalDestination, paths);
     } catch (IOException e) {
       onError(e);
     }
-
     subscription.request(1);
+  }
+
+  private void moveFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)
+      throws IOException {
+    if (fileExistsMode == FileExistsMode.REPLACE_EXISTING)
+      Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
+    else
+      try {
+        Files.move(paths.getLeft(), finalDestination);
+      } catch (FileAlreadyExistsException e) {
+        logFileAlreadyExists(finalDestination);
+      }
+
+    logger.info(String.format("Moved %s.", finalDestination.toString()));
+  }
+
+  private void copyFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)
+      throws IOException {
+    if (fileExistsMode == FileExistsMode.REPLACE_EXISTING)
+      Files.copy(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
+    else
+      try {
+        Files.copy(paths.getLeft(), finalDestination);
+      } catch (FileAlreadyExistsException e) {
+        logFileAlreadyExists(finalDestination);
+      }
+
+    logger.info(String.format("Copied %s.", finalDestination.toString()));
+  }
+
+  private void logFileAlreadyExists(@NonNull Path path) {
+    logger.error(
+        String.format("%s already exists, skipping.", path.getName(path.getNameCount() - 1)));
   }
 
   /**
