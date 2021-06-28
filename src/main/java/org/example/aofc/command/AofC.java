@@ -63,7 +63,7 @@ public class AofC implements Callable<Integer> {
       names = {"-t", "--timeout"},
       description =
           "How much time do you want to wait for completion (in seconds). If zero, no timeout will be expected (the program will complete when all files are sorted). Default: ${DEFAULT-VALUE}",
-      defaultValue = "30")
+      defaultValue = "10")
   private Integer timeout;
 
   @Option(
@@ -81,8 +81,10 @@ public class AofC implements Callable<Integer> {
           "Whether the program should copy or move the files. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
       converter = MoveModeArgConverter.class,
       completionCandidates = MoveMode.Enumeration.class,
-      defaultValue = "copy")
+      defaultValue = "move")
   private MoveMode moveMode;
+
+  // todo fix logger formatting
 
   @Override
   public Integer call() {
@@ -104,7 +106,7 @@ public class AofC implements Callable<Integer> {
 
     transponder.subscribe(mover);
     scrapper.subscribe(transponder);
-    mover.request();
+    pool.submit(mover::request);
 
     if (timeout <= 0) timeout = Integer.MAX_VALUE;
 

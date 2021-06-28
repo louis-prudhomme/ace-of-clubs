@@ -12,9 +12,7 @@ public class MusicFileFactory {
     return switch (FileUtils.getExtension(path).orElseThrow().toLowerCase(Locale.ROOT)) {
       case "mp3" -> new Mp3MusicFile(path);
       case "flac", "m4a", "wav" -> new FlacMusicFile(path);
-      default -> {
-        throw new MusicFileException(path.toString());
-      }
+      default -> throw new MusicFileException(path.toString());
     };
   }
 }

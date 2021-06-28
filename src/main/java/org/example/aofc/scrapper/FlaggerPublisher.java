@@ -16,7 +16,7 @@ public class FlaggerPublisher implements Flow.Publisher<Path> {
 
   @Override
   public synchronized void subscribe(@NonNull Flow.Subscriber<? super Path> subscriber) {
-    if (subscribed) subscriber.onError(new IllegalStateException()); // only one allowed
+    if (subscribed) subscriber.onError(new IllegalStateException());
     else {
       subscribed = true;
       subscriber.onSubscribe(new Flagger(subscriber, executor, origin));

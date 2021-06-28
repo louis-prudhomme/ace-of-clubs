@@ -7,13 +7,14 @@ import org.example.aofc.formatter.SpecificationFormatter;
 import org.example.aofc.reader.MusicFile;
 import org.example.aofc.reader.MusicFileFactory;
 import org.example.aofc.reader.exception.MusicFileException;
-import org.example.aofc.utils.SyncingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Future;
@@ -27,7 +28,7 @@ public class Transponder implements Flow.Subscription {
 
   private final SpecificationFormatter formatter;
   private final ExecutorService executor;
-  private final SyncingQueue<Path> queue;
+  private final Queue<Path> queue;
   private final Flow.Subscriber<? super Pair<Path, Path>> subscriber;
 
   private volatile boolean completed = false;
@@ -40,9 +41,8 @@ public class Transponder implements Flow.Subscription {
   @Override
   public void request(long n) {
     if (completed) return;
-    // todo if (subscriber == null) Thread.yield();
 
-    while (!completed && n-- != 0) {
+    while (!completed && n-- > 0) {
       synchronized (queue) {
         while (queue.isEmpty() && !completed)
           try {
@@ -51,9 +51,11 @@ public class Transponder implements Flow.Subscription {
             e.printStackTrace(); // todo
           }
 
-        consume(queue.pop().orElseThrow());
+        consume(Objects.requireNonNull(queue.poll())); // todo
 
-        if (shouldComplete && queue.isEmpty()) completed = true;
+        if (shouldComplete && queue.isEmpty()) {
+          completed = true;
+        }
         queue.notify();
       }
     }
@@ -70,9 +72,11 @@ public class Transponder implements Flow.Subscription {
         logger.info(
             String.format(
                 "%s is already sorted, ignoring.", path.getName(path.getNameCount() - 1)));
+      // request(1);
     } catch (MusicFileException e) {
       logger.info(
           String.format("« %s » was not a music file.", path.getName(path.getNameCount() - 1)));
+      // request(1); todo
     }
   }
 

@@ -4,19 +4,21 @@ import lombok.NonNull;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Future;
 
 public class Flagger implements Flow.Subscription {
+  private final Queue<Path> queue = new LinkedList<>();
+  private final List<Future<?>> futures = new ArrayList<>();
+
   private final Flow.Subscriber<? super Path> subscriber;
   private final ExecutorService executor;
   private final Scrapper scrapper;
-
-  private final List<Future<?>> futures = new ArrayList<>();
   private final Thread scrapperThread;
-  private boolean completed = false;
 
   public Flagger(
       @NonNull Flow.Subscriber<? super Path> subscriber,
@@ -25,36 +27,39 @@ public class Flagger implements Flow.Subscription {
     this.subscriber = subscriber;
     this.executor = executor;
 
-    this.scrapper = new Scrapper(origin, () -> completed = true);
+    this.scrapper = new Scrapper(queue, origin);
     this.scrapperThread = new Thread(this.scrapper);
     this.scrapperThread.start();
   }
 
   @Override
   public void request(long n) {
-    if (completed) return;
+    if (isCompleted()) subscriber.onComplete();
 
-    while (!completed && n-- != 0) {
-      synchronized (scrapper.getQueue()) {
-        while (scrapper.getQueue().isEmpty() && !completed) {
+    while (!isCompleted() && n-- > 0) {
+      synchronized (queue) {
+        while (queue.isEmpty() && !isCompleted()) {
           try {
-            scrapper.getQueue().wait();
-          } catch (InterruptedException ignored) {
+            queue.wait();
+          } catch (Exception e) {
+            e.printStackTrace();
           }
         }
 
-        produce(scrapper.getQueue().pop().orElseThrow());
-        scrapper.getQueue().notify();
+        var request = queue.poll();
+        futures.add(executor.submit(() -> subscriber.onNext(request)));
+        queue.notify();
       }
     }
   }
 
-  private void produce(@NonNull Path path) {
-    futures.add(executor.submit(() -> subscriber.onNext(path)));
+  private boolean isCompleted() {
+    return queue.isEmpty() && scrapper.isCompleted();
   }
 
   @Override
   public void cancel() {
+    subscriber.onError(new RuntimeException("cancelled"));
     scrapperThread.interrupt();
     futures.forEach(future -> future.cancel(true));
   }

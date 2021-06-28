@@ -4,27 +4,27 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.example.aofc.formatter.SpecificationFormatter;
-import org.example.aofc.utils.SyncingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
 @RequiredArgsConstructor
 public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
-  private static final int INITIAL_REQUEST_SIZE = 5;
+  private static final int INITIAL_REQUEST_SIZE = 50;
   private static final int PRODUCING_RATE = 50;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final SyncingQueue<Path> queue = new SyncingQueue<>();
+  private final Queue<Path> queue = new LinkedList<>();
 
   private final ExecutorService executor;
   private final SpecificationFormatter formatter;
 
   private Transponder transponder;
-
   private Flow.Subscription subscription;
 
   @Override
@@ -38,30 +38,29 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   @Override
   public void onSubscribe(@NonNull Flow.Subscription subscription) {
     this.subscription = subscription;
-    executor.submit(() -> subscription.request(INITIAL_REQUEST_SIZE)); // todo
+    subscription.request(INITIAL_REQUEST_SIZE);
   }
 
   @Override
-  public void onNext(@NonNull Path item) {
+  public void onNext(@NonNull Path path) {
     synchronized (queue) {
-      while (queue.size() >= PRODUCING_RATE)
+      while (queue.size() > PRODUCING_RATE)
         try {
           queue.wait();
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
           e.printStackTrace(); // todo
         }
 
-      queue.push(item);
+      queue.offer(path);
       queue.notify();
     }
-
-    executor.submit(() -> subscription.request(1));
+    subscription.request(1);
   }
 
   @Override
   public void onError(Throwable throwable) {
-    transponder.cancel();
     logger.error(throwable.getMessage());
+    transponder.cancel();
     throw new RuntimeException(throwable);
   }
 

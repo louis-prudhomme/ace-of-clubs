@@ -17,7 +17,7 @@ import java.util.concurrent.Flow;
 public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private static final int INITIAL_REQUEST_SIZE = 5;
+  private static final int INITIAL_REQUEST_SIZE = 50;
 
   private final Path destination;
   private final FileExistsMode fileExistsMode;
@@ -45,16 +45,18 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
 
   private void moveFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)
       throws IOException {
-    if (fileExistsMode == FileExistsMode.REPLACE_EXISTING)
-      Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
-    else
-      try {
-        Files.move(paths.getLeft(), finalDestination);
-      } catch (FileAlreadyExistsException e) {
-        logFileAlreadyExists(finalDestination);
-      }
+    try {
+      if (fileExistsMode == FileExistsMode.REPLACE_EXISTING)
+        Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
+      else Files.move(paths.getLeft(), finalDestination);
+    } catch (FileAlreadyExistsException e) {
+      logFileAlreadyExists(finalDestination);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 
-    logger.debug(String.format("Moved %s.", finalDestination.toString()));
+    logger.debug(
+        String.format("Moved %s.", finalDestination.getName(finalDestination.getNameCount() - 1)));
   }
 
   private void copyFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)
@@ -77,7 +79,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   }
 
   /**
-   * throw in this method is undefined behavior and will crash the worker ; printint stacktrace
+   * throw in this method is undefined behavior and will crash the worker ; printing stacktrace
    * necessary for fast debug
    */
   @Override
