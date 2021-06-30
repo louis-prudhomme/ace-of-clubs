@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NonNull;
 import org.example.aofc.reader.exception.MusicFileException;
 import org.example.aofc.utils.FileUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,11 +29,12 @@ public class Mp3MusicFile implements MusicFile {
 
   @Override
   public @NonNull Optional<String> getTag(@NonNull MusicTags key) {
-    return getId3v2Tag(key).isPresent() ? getId3v2Tag(key) : getId3v1Tag(key);
+    var tentative = Optional.ofNullable(getId3v2Tag(key));
+    return tentative.isPresent() ? tentative : Optional.ofNullable(getId3v1Tag(key));
   }
 
-  private @NonNull Optional<String> getId3v2Tag(@NonNull MusicTags key) {
-    return Optional.ofNullable(switch (key) {
+  private @Nullable String getId3v2Tag(@NonNull MusicTags key) {
+    return switch (key) {
       case ALBUM -> audioFile.getId3v2Tag().getAlbum();
       case ALBUM_ARTIST -> audioFile.getId3v2Tag().getAlbumArtist();
       case ARTIST -> audioFile.getId3v2Tag().getArtist();
@@ -41,11 +43,11 @@ public class Mp3MusicFile implements MusicFile {
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
       case TRACK -> audioFile.getId3v2Tag().getTrack();
       case DISC -> null;
-    });
+    };
   }
 
-  private @NonNull Optional<String> getId3v1Tag(@NonNull MusicTags key) {
-    return Optional.ofNullable(switch (key) {
+  private @Nullable String getId3v1Tag(@NonNull MusicTags key) {
+    return switch (key) {
       case ALBUM -> audioFile.getId3v1Tag().getAlbum();
       case ALBUM_ARTIST, ARTIST -> audioFile.getId3v1Tag().getArtist();
       case DATE -> audioFile.getId3v1Tag().getYear();
@@ -53,6 +55,6 @@ public class Mp3MusicFile implements MusicFile {
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
       case TRACK -> audioFile.getId3v1Tag().getTrack();
       case DISC -> null;
-    });
+    };
   }
 }

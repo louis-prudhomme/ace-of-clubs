@@ -50,7 +50,6 @@ public class Transponder implements Flow.Subscription {
           }
 
         if (!queue.isEmpty()) consume(queue.poll());
-
         queue.notify();
       }
     }
@@ -75,7 +74,9 @@ public class Transponder implements Flow.Subscription {
       }
     } catch (MusicFileException e) {
       logger.info(
-          String.format("« %s » was not a music file.", path.getName(path.getNameCount() - 1)));
+          String.format(
+              "« %s » was not a music file (%s).",
+              path.getName(path.getNameCount() - 1), e.getMessage()));
       request(1);
     }
   }
@@ -83,7 +84,7 @@ public class Transponder implements Flow.Subscription {
   @Override
   public void cancel() {
     futures.forEach(future -> future.cancel(true));
-    logger.debug("Transponder canceling.");
+    logger.info("Transponder canceling.");
   }
 
   public void signalComplete() {

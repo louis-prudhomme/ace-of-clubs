@@ -39,7 +39,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
       if (moveMode == MoveMode.MOVE) moveFile(finalDestination, paths);
       else copyFile(finalDestination, paths);
 
-      logger.info(
+      logger.debug(
           String.format(
               "Finished %s of « %s. »", moveMode.toString(), getShortName(finalDestination, 3)));
     } catch (FileAlreadyExistsException e) {
@@ -82,6 +82,6 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
 
   @Override
   public void onComplete() {
-    logger.debug("Transponder completed");
+    logger.info("Transponder completed");
   }
 }

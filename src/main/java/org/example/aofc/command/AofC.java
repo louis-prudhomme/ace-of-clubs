@@ -106,10 +106,10 @@ public class AofC implements Callable<Integer> {
     var transponder = new TransponderProcessor(outPool, specification);
     var mover = new Mover(destinationPath, fileExistsMode, moveMode);
 
-    scrapper.subscribe(transponder);
-    transponder.subscribe(mover);
-
     if (timeout <= 0) timeout = Integer.MAX_VALUE;
+
+    inPool.submit(() -> scrapper.subscribe(transponder));
+    outPool.submit(() -> transponder.subscribe(mover));
 
     return inPool.awaitQuiescence(timeout, TimeUnit.SECONDS)
             && outPool.awaitQuiescence(timeout, TimeUnit.SECONDS)
