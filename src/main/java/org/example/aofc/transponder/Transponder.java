@@ -29,6 +29,7 @@ public class Transponder implements Flow.Subscription {
   private final ExecutorService executor;
   private final Queue<Path> queue;
   private final Flow.Subscriber<? super Pair<Path, Path>> subscriber;
+  private final Path destination;
 
   private volatile boolean shouldComplete = false;
 
@@ -62,7 +63,9 @@ public class Transponder implements Flow.Subscription {
   private void consume(@NonNull Path path) {
     try {
       var file = factory.make(path);
-      var pair = Pair.of(path, getRelativePath(file));
+      var fileRelativePath = getRelativePath(file);
+      var fileAbsolutePath = destination.resolve(fileRelativePath);
+      var pair = Pair.of(path, fileAbsolutePath);
 
       if (!pair.getLeft().equals(pair.getRight()))
         futures.add(executor.submit(() -> subscriber.onNext(pair)));

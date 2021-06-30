@@ -33,7 +33,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
 
   @Override
   public void onNext(@NonNull Pair<Path, Path> paths) {
-    var finalDestination = destination.resolve(paths.getRight());
+    var finalDestination = paths.getRight();
     try {
       Files.createDirectories(finalDestination.getParent());
       if (moveMode == MoveMode.MOVE) moveFile(finalDestination, paths);

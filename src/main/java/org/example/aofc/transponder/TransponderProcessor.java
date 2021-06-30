@@ -23,6 +23,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
 
   private final ExecutorService executor;
   private final SpecificationFormatter formatter;
+  private final Path destination;
 
   private Transponder transponder;
   private Flow.Subscription subscription;
@@ -31,7 +32,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   public void subscribe(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {
     if (this.transponder != null) throw new UnsupportedOperationException();
 
-    this.transponder = new Transponder(formatter, executor, queue, subscriber);
+    this.transponder = new Transponder(formatter, executor, queue, subscriber, destination);
     subscriber.onSubscribe(transponder);
   }
 

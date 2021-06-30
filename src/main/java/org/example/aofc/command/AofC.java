@@ -103,7 +103,7 @@ public class AofC implements Callable<Integer> {
     var outPool = new ForkJoinPool();
 
     var scrapper = new FlaggerPublisher(inPool, originPath);
-    var transponder = new TransponderProcessor(outPool, specification);
+    var transponder = new TransponderProcessor(outPool, specification, destinationPath);
     var mover = new Mover(destinationPath, fileExistsMode, moveMode);
 
     if (timeout <= 0) timeout = Integer.MAX_VALUE;
