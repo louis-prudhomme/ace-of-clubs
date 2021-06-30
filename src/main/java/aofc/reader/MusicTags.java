@@ -11,7 +11,7 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public enum MusicTags {
   ALBUM("album"),
-  ALBUM_ARTIST("albart"),
+  ALBUM_ARTIST("album_artist"),
   ARTIST("artist"),
   DATE("date"),
   TITLE("title"),

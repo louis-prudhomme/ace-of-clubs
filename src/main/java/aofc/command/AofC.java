@@ -55,7 +55,7 @@ public class AofC implements Callable<Integer> {
       names = {"-f", "--format"},
       description =
           "Format of the file names, including any subfolder. Music file tags and data can be specified between [square brackets]. The default value is « ${DEFAULT-VALUE} »",
-      defaultValue = "[albart]/[date] – [album]/[disc]-[track] – [title].[extension]")
+      defaultValue = "[album_artist]/[date] – [album]/[disc]-[track] – [title].[extension]")
   private String specificationArg;
 
   @Option(
@@ -82,12 +82,6 @@ public class AofC implements Callable<Integer> {
       completionCandidates = MoveMode.Enumeration.class,
       defaultValue = "move")
   private MoveMode moveMode;
-
-  // todo fix logger formatting
-  // todo add multivalued tags support (+ some more customization)
-  // todo package
-  // todo readme
-  // todo file transcription (wav → flac)
 
   @Override
   public Integer call() {
