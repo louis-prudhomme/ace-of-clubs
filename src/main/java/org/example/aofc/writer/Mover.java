@@ -17,7 +17,7 @@ import java.util.concurrent.Flow;
 public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private static final int INITIAL_REQUEST_SIZE = 50;
+  private static final int INITIAL_REQUEST_SIZE = 10;
 
   private final Path destination;
   private final FileExistsMode fileExistsMode;
@@ -28,6 +28,7 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   @Override
   public void onSubscribe(@NonNull Flow.Subscription subscription) {
     this.subscription = subscription;
+    subscription.request(INITIAL_REQUEST_SIZE);
   }
 
   @Override
@@ -37,45 +38,35 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
       Files.createDirectories(finalDestination.getParent());
       if (moveMode == MoveMode.MOVE) moveFile(finalDestination, paths);
       else copyFile(finalDestination, paths);
+
+      logger.info(
+          String.format(
+              "Finished %s of « %s. »", moveMode.toString(), getShortName(finalDestination, 3)));
+    } catch (FileAlreadyExistsException e) {
+      logger.info(String.format("%s already exists, skipping.", getShortName(finalDestination, 1)));
     } catch (IOException e) {
       onError(e);
+    } finally {
+      subscription.request(1);
     }
-    subscription.request(1);
+  }
+
+  private String getShortName(@NonNull Path path, int nb) {
+    return path.subpath(path.getNameCount() - nb, path.getNameCount()).toString();
   }
 
   private void moveFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)
       throws IOException {
-    try {
-      if (fileExistsMode == FileExistsMode.REPLACE_EXISTING)
-        Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
-      else Files.move(paths.getLeft(), finalDestination);
-    } catch (FileAlreadyExistsException e) {
-      logFileAlreadyExists(finalDestination);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    logger.debug(
-        String.format("Moved %s.", finalDestination.getName(finalDestination.getNameCount() - 1)));
+    if (fileExistsMode == FileExistsMode.REPLACE_EXISTING)
+      Files.move(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
+    else Files.move(paths.getLeft(), finalDestination);
   }
 
   private void copyFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)
       throws IOException {
     if (fileExistsMode == FileExistsMode.REPLACE_EXISTING)
       Files.copy(paths.getLeft(), finalDestination, StandardCopyOption.REPLACE_EXISTING);
-    else
-      try {
-        Files.copy(paths.getLeft(), finalDestination);
-      } catch (FileAlreadyExistsException e) {
-        logFileAlreadyExists(finalDestination);
-      }
-
-    logger.debug(String.format("Copied %s.", finalDestination.toString()));
-  }
-
-  private void logFileAlreadyExists(@NonNull Path path) {
-    logger.error(
-        String.format("%s already exists, skipping.", path.getName(path.getNameCount() - 1)));
+    else Files.copy(paths.getLeft(), finalDestination);
   }
 
   /**
@@ -92,9 +83,5 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   @Override
   public void onComplete() {
     logger.debug("Transponder completed");
-  }
-
-  public void request() {
-    this.subscription.request(INITIAL_REQUEST_SIZE);
   }
 }

@@ -51,12 +51,13 @@ public class Transponder implements Flow.Subscription {
             e.printStackTrace(); // todo
           }
 
-        consume(Objects.requireNonNull(queue.poll())); // todo
+        var t = Objects.requireNonNull(queue.poll());
+        consume(t); // todo
 
         if (shouldComplete && queue.isEmpty()) {
           completed = true;
         }
-        queue.notify();
+        queue.notifyAll();
       }
     }
   }
@@ -68,15 +69,16 @@ public class Transponder implements Flow.Subscription {
 
       if (!pair.getLeft().equals(pair.getRight()))
         futures.add(executor.submit(() -> subscriber.onNext(pair)));
-      else
+      else {
         logger.info(
             String.format(
                 "%s is already sorted, ignoring.", path.getName(path.getNameCount() - 1)));
-      // request(1);
+        request(1);
+      }
     } catch (MusicFileException e) {
       logger.info(
           String.format("« %s » was not a music file.", path.getName(path.getNameCount() - 1)));
-      // request(1); todo
+      request(1);
     }
   }
 

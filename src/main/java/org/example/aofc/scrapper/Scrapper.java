@@ -15,7 +15,7 @@ import java.util.Queue;
 @RequiredArgsConstructor
 public class Scrapper implements Runnable {
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private static final int PRODUCING_RATE = 50;
+  private static final int PRODUCING_RATE = 10;
 
   private final Queue<Path> queue;
   private final Path origin;
@@ -49,7 +49,7 @@ public class Scrapper implements Runnable {
         queue.wait();
       }
       queue.offer(item);
-      queue.notifyAll();
+      queue.notify();
     }
   }
 }

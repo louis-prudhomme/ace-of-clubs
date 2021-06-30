@@ -63,7 +63,7 @@ public class AofC implements Callable<Integer> {
       names = {"-t", "--timeout"},
       description =
           "How much time do you want to wait for completion (in seconds). If zero, no timeout will be expected (the program will complete when all files are sorted). Default: ${DEFAULT-VALUE}",
-      defaultValue = "10")
+      defaultValue = "0")
   private Integer timeout;
 
   @Option(
@@ -100,17 +100,22 @@ public class AofC implements Callable<Integer> {
     logger.debug(String.format("MoveMode « %s »", moveMode.toString()));
 
     var pool = ForkJoinPool.commonPool();
-    var scrapper = new FlaggerPublisher(pool, originPath);
-    var transponder = new TransponderProcessor(pool, specification);
+    var p1 = new ForkJoinPool();
+    var p2 = new ForkJoinPool();
+
+    var scrapper = new FlaggerPublisher(p1, originPath);
+    var transponder = new TransponderProcessor(p2, specification);
     var mover = new Mover(destinationPath, fileExistsMode, moveMode);
 
-    transponder.subscribe(mover);
     scrapper.subscribe(transponder);
-    pool.submit(mover::request);
+    transponder.subscribe(mover);
 
     if (timeout <= 0) timeout = Integer.MAX_VALUE;
 
-    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS) ? 0 : 1000;
+    return p1.awaitQuiescence(timeout, TimeUnit.SECONDS)
+            && p2.awaitQuiescence(timeout, TimeUnit.SECONDS)
+        ? 0
+        : 1000;
   }
 
   public static void main(@NonNull String[] args) {

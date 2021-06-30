@@ -15,8 +15,8 @@ import java.util.concurrent.Flow;
 
 @RequiredArgsConstructor
 public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
-  private static final int INITIAL_REQUEST_SIZE = 50;
-  private static final int PRODUCING_RATE = 50;
+  private static final int INITIAL_REQUEST_SIZE = 10;
+  private static final int PRODUCING_RATE = 10;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final Queue<Path> queue = new LinkedList<>();
@@ -52,7 +52,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
         }
 
       queue.offer(path);
-      queue.notify();
+      queue.notifyAll();
     }
     subscription.request(1);
   }
