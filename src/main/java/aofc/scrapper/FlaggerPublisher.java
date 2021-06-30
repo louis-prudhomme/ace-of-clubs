@@ -4,12 +4,14 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 public class FlaggerPublisher implements Flow.Publisher<Path> {
-  private final ExecutorService executor;
+  private final ForkJoinPool pool = new ForkJoinPool();
+
   private final Path origin;
 
   private volatile boolean subscribed;
@@ -19,7 +21,15 @@ public class FlaggerPublisher implements Flow.Publisher<Path> {
     if (subscribed) subscriber.onError(new IllegalStateException());
     else {
       subscribed = true;
-      subscriber.onSubscribe(new Flagger(subscriber, executor, origin));
+      subscriber.onSubscribe(new Flagger(subscriber, pool, origin));
     }
+  }
+
+  public boolean await(int timeout) {
+    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS);
+  }
+
+  public void submit(@NonNull Flow.Subscriber<? super Path> subscriber) {
+    pool.submit(() -> subscribe(subscriber));
   }
 }

@@ -10,8 +10,9 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
@@ -20,8 +21,8 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final Queue<Path> queue = new LinkedList<>();
+  private final ForkJoinPool pool = new ForkJoinPool();
 
-  private final ExecutorService executor;
   private final SpecificationFormatter formatter;
   private final Path destination;
 
@@ -32,7 +33,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   public void subscribe(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {
     if (this.transponder != null) throw new UnsupportedOperationException();
 
-    this.transponder = new Transponder(formatter, executor, queue, subscriber, destination);
+    this.transponder = new Transponder(formatter, pool, queue, subscriber, destination);
     subscriber.onSubscribe(transponder);
   }
 
@@ -69,5 +70,13 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   public void onComplete() {
     transponder.signalComplete();
     logger.debug("TransponderProcessor completed.");
+  }
+
+  public boolean await(int timeout) {
+    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS);
+  }
+
+  public void submit(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {
+    pool.submit(() -> subscribe(subscriber));
   }
 }

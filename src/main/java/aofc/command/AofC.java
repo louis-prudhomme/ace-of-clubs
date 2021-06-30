@@ -19,8 +19,6 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 @Command(
@@ -88,6 +86,8 @@ public class AofC implements Callable<Integer> {
   // todo fix logger formatting
   // todo add multivalued tags support (+ some more customization)
   // todo package
+  // todo readme
+  // todo file transcription (wav → flac)
 
   @Override
   public Integer call() {
@@ -102,22 +102,16 @@ public class AofC implements Callable<Integer> {
     logger.debug(String.format("FileExistsMode « %s »", fileExistsMode.toString()));
     logger.debug(String.format("MoveMode « %s »", moveMode.toString()));
 
-    var inPool = new ForkJoinPool();
-    var outPool = new ForkJoinPool();
-
-    var scrapper = new FlaggerPublisher(inPool, originPath);
-    var transponder = new TransponderProcessor(outPool, specification, destinationPath);
+    var scrapper = new FlaggerPublisher(originPath);
+    var transponder = new TransponderProcessor(specification, destinationPath);
     var mover = new Mover(destinationPath, fileExistsMode, moveMode);
 
     if (timeout <= 0) timeout = Integer.MAX_VALUE;
 
-    inPool.submit(() -> scrapper.subscribe(transponder));
-    outPool.submit(() -> transponder.subscribe(mover));
+    scrapper.submit(transponder);
+    transponder.submit(mover);
 
-    return inPool.awaitQuiescence(timeout, TimeUnit.SECONDS)
-            && outPool.awaitQuiescence(timeout, TimeUnit.SECONDS)
-        ? 0
-        : 1000;
+    return scrapper.await(timeout) && transponder.await(timeout) ? 0 : 1000;
   }
 
   public static void main(@NonNull String[] args) {
