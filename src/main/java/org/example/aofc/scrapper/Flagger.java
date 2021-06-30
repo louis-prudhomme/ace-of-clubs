@@ -46,8 +46,10 @@ public class Flagger implements Flow.Subscription {
           }
         }
 
-        var request = queue.poll();
-        futures.add(executor.submit(() -> subscriber.onNext(request)));
+        if (!queue.isEmpty()) {
+          var request = queue.poll();
+          futures.add(executor.submit(() -> subscriber.onNext(request)));
+        }
         queue.notify();
       }
     }

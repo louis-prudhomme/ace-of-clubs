@@ -52,7 +52,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
         }
 
       queue.offer(path);
-      queue.notifyAll();
+      queue.notify();
     }
     subscription.request(1);
   }

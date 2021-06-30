@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -31,7 +30,6 @@ public class Transponder implements Flow.Subscription {
   private final Queue<Path> queue;
   private final Flow.Subscriber<? super Pair<Path, Path>> subscriber;
 
-  private volatile boolean completed = false;
   private volatile boolean shouldComplete = false;
 
   private @NonNull Path getRelativePath(@NonNull MusicFile file) {
@@ -40,26 +38,26 @@ public class Transponder implements Flow.Subscription {
 
   @Override
   public void request(long n) {
-    if (completed) return;
+    if (isCompleted()) subscriber.onComplete();
 
-    while (!completed && n-- > 0) {
+    while (!isCompleted() && n-- > 0) {
       synchronized (queue) {
-        while (queue.isEmpty() && !completed)
+        while (queue.isEmpty() && !isCompleted())
           try {
             queue.wait();
           } catch (InterruptedException e) {
             e.printStackTrace(); // todo
           }
 
-        var t = Objects.requireNonNull(queue.poll());
-        consume(t); // todo
+        if (!queue.isEmpty()) consume(queue.poll());
 
-        if (shouldComplete && queue.isEmpty()) {
-          completed = true;
-        }
-        queue.notifyAll();
+        queue.notify();
       }
     }
+  }
+
+  private boolean isCompleted() {
+    return shouldComplete && queue.isEmpty();
   }
 
   private void consume(@NonNull Path path) {
@@ -84,7 +82,6 @@ public class Transponder implements Flow.Subscription {
 
   @Override
   public void cancel() {
-    completed = true;
     futures.forEach(future -> future.cancel(true));
     logger.debug("Transponder canceling.");
   }
