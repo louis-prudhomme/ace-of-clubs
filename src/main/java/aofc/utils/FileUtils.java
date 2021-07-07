@@ -40,4 +40,9 @@ public class FileUtils {
       throw new IllegalArgumentException(String.format("%s is not a valid path", given));
     }
   }
+
+  public static String getShortName(@NonNull Path path, int nb) {
+    if (path.getNameCount() > nb) throw new IllegalArgumentException();
+    return path.subpath(path.getNameCount() - nb, path.getNameCount()).toString();
+  }
 }

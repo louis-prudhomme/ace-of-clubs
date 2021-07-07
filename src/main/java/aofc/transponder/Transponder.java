@@ -1,9 +1,10 @@
 package aofc.transponder;
 
 import aofc.formatter.SpecificationFormatter;
-import aofc.reader.MusicFile;
+import aofc.formatter.exception.SpecificationFormattingException;
 import aofc.reader.MusicFileFactory;
 import aofc.reader.exception.MusicFileException;
+import aofc.utils.FileUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -17,6 +18,7 @@ import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 @RequiredArgsConstructor
 public class Transponder implements Flow.Subscription {
@@ -32,10 +34,7 @@ public class Transponder implements Flow.Subscription {
   private final Path destination;
 
   private volatile boolean shouldComplete = false;
-
-  private @NonNull Path getRelativePath(@NonNull MusicFile file) {
-    return Path.of(formatter.format(file));
-  }
+  private volatile boolean completed = false;
 
   @Override
   public void request(long n) {
@@ -57,36 +56,47 @@ public class Transponder implements Flow.Subscription {
   }
 
   private boolean isCompleted() {
-    return shouldComplete && queue.isEmpty();
+    if (shouldComplete && queue.isEmpty()) completed = true;
+    return completed;
   }
 
   private void consume(@NonNull Path path) {
     try {
       var file = factory.make(path);
-      var fileRelativePath = getRelativePath(file);
-      var fileAbsolutePath = destination.resolve(fileRelativePath);
-      var pair = Pair.of(path, fileAbsolutePath);
+      var filePath = formatter.format(destination, file);
+      var pair = Pair.of(path, filePath);
 
       if (!pair.getLeft().equals(pair.getRight()))
         futures.add(executor.submit(() -> subscriber.onNext(pair)));
       else {
-        logger.info(
-            String.format(
-                "%s is already sorted, ignoring.", path.getName(path.getNameCount() - 1)));
-        request(1);
+        logNRequest(logger::info, "%s is already sorted, ignoring.", path.getFileName().toString());
       }
     } catch (MusicFileException e) {
-      logger.info(
-          String.format(
-              "« %s » was not a music file (%s).",
-              path.getName(path.getNameCount() - 1), e.getMessage()));
-      request(1);
+      logNRequest(
+          logger::info,
+          "« %s » was not a music file (%s).",
+          path.getFileName().toString(),
+          e.getMessage());
+    } catch (SpecificationFormattingException e) {
+      logNRequest(
+          logger::error,
+          "Problem reading « %s » tags : %s (%s).",
+          path.getFileName().toString(),
+          e.getMessage(),
+          FileUtils.getShortName(path, 3));
     }
+  }
+
+  private void logNRequest(
+      @NonNull Consumer<String> loggat, @NonNull String toFormat, String... args) {
+    loggat.accept(String.format(toFormat, (Object[]) args));
+    futures.add(executor.submit(() -> request(1)));
   }
 
   @Override
   public void cancel() {
-    futures.forEach(future -> future.cancel(true));
+    completed = true;
+    futures.forEach(future -> future.cancel(true)); // todo useful ?
     logger.info("Transponder canceling.");
   }
 

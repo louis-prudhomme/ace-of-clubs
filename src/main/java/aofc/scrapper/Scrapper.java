@@ -3,6 +3,7 @@ package aofc.scrapper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,12 +16,12 @@ import java.util.Queue;
 @RequiredArgsConstructor
 public class Scrapper implements Runnable {
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private static final int PRODUCING_RATE = 10;
+  private static final int PRODUCING_RATE = 20;
 
   private final Queue<Path> queue;
   private final Path origin;
 
-  @Getter private volatile boolean completed = false;
+  @Getter @Setter private volatile boolean completed = false;
 
   @Override
   public void run() {
@@ -29,6 +30,7 @@ public class Scrapper implements Runnable {
           .filter(Files::isRegularFile)
           .forEach(
               item -> {
+                if (completed) files.close();
                 try {
                   produce(item);
                 } catch (InterruptedException e) {
@@ -45,7 +47,7 @@ public class Scrapper implements Runnable {
 
   private void produce(@NonNull Path item) throws InterruptedException {
     synchronized (queue) {
-      while (queue.size() > PRODUCING_RATE) {
+      while (!completed && queue.size() > PRODUCING_RATE) {
         queue.wait();
       }
       queue.offer(item);

@@ -38,7 +38,7 @@ public class Mp3MusicFile implements MusicFile {
       case ALBUM -> audioFile.getId3v2Tag().getAlbum();
       case ALBUM_ARTIST -> audioFile.getId3v2Tag().getAlbumArtist();
       case ARTIST -> audioFile.getId3v2Tag().getArtist();
-      case DATE -> audioFile.getId3v2Tag().getDate();
+      case DATE -> Optional.ofNullable(audioFile.getId3v2Tag().getDate()).orElse(Optional.ofNullable(audioFile.getId3v2Tag().getYear()).orElse(null));
       case TITLE -> audioFile.getId3v2Tag().getTitle();
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
       case TRACK -> audioFile.getId3v2Tag().getTrack();

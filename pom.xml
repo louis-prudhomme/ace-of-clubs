@@ -16,8 +16,8 @@
                 <!-- annotationProcessorPaths requires maven-compiler-plugin version 3.5 or higher -->
                 <version>${maven.compiler.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>15</source>
+                    <target>15</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>info.picocli</groupId>
@@ -56,10 +56,12 @@
     </build>
 
     <properties>
+
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lombok.version>1.18.20</lombok.version>
+        <durian.version>3.4.0</durian.version>
         <java.version>16</java.version>
         <logback.version>1.2.3</logback.version>
         <mp3magic.version>0.9.1</mp3magic.version>
@@ -71,7 +73,11 @@
     </properties>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/org/jaudiotagger -->
+        <dependency>
+            <groupId>com.diffplug.durian</groupId>
+            <artifactId>durian</artifactId>
+            <version>${durian.version}</version>
+        </dependency>
         <dependency>
             <groupId>org</groupId>
             <artifactId>jaudiotagger</artifactId>

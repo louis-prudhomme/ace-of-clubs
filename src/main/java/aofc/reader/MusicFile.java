@@ -46,4 +46,9 @@ public interface MusicFile {
   default Optional<String> getTitleTag() {
     return getTag(MusicTags.TITLE);
   }
+
+  @NonNull
+  default String getFileName() {
+    return getPath().getFileName().toString();
+  }
 }

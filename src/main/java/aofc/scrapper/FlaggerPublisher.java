@@ -25,8 +25,11 @@ public class FlaggerPublisher implements Flow.Publisher<Path> {
     }
   }
 
-  public boolean await(int timeout) {
-    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS);
+  public boolean await(int timeout) throws InterruptedException {
+    if (pool.awaitTermination(timeout, TimeUnit.SECONDS)) return true;
+
+    pool.shutdown();
+    return pool.awaitTermination(1, TimeUnit.MILLISECONDS);
   }
 
   public void submit(@NonNull Flow.Subscriber<? super Path> subscriber) {

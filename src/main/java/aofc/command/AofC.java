@@ -63,7 +63,7 @@ public class AofC implements Callable<Integer> {
       description =
           "How much time do you want to wait for completion (in seconds). If zero, no timeout will be expected (the program will complete when all files are sorted). Default: ${DEFAULT-VALUE}",
       defaultValue = "10")
-  private Integer timeout;
+  private Integer timeout = 10;
 
   @Option(
       names = {"-fem", "--file-exist-mode"},
@@ -98,14 +98,18 @@ public class AofC implements Callable<Integer> {
 
     var scrapper = new FlaggerPublisher(originPath);
     var transponder = new TransponderProcessor(specification, destinationPath);
-    var mover = new Mover(destinationPath, fileExistsMode, moveMode);
+    var mover = new Mover(fileExistsMode, moveMode);
 
     if (timeout <= 0) timeout = Integer.MAX_VALUE;
 
     scrapper.submit(transponder);
     transponder.submit(mover);
 
-    return scrapper.await(timeout) && transponder.await(timeout) ? 0 : 1000;
+    try {
+      return scrapper.await(timeout) && transponder.await(timeout) ? 0 : 1000;
+    } catch (InterruptedException e) {
+      return 1500;
+    }
   }
 
   public static void main(@NonNull String[] args) {

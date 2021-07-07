@@ -1,5 +1,6 @@
 package aofc.writer;
 
+import aofc.utils.FileUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -12,14 +13,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RequiredArgsConstructor
 public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private static final int INITIAL_REQUEST_SIZE = 10;
+  private static final int BATCH_QUANTITY = 100;
+  private static final int INITIAL_REQUEST_SIZE = 20;
+  private static final AtomicLong handled = new AtomicLong(0);
 
-  private final Path destination;
   private final FileExistsMode fileExistsMode;
   private final MoveMode moveMode;
 
@@ -41,18 +44,19 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
 
       logger.debug(
           String.format(
-              "Finished %s of « %s. »", moveMode.toString(), getShortName(finalDestination, 3)));
+              "Finished %s of « %s ».",
+              moveMode.toString(), FileUtils.getShortName(finalDestination, 3)));
     } catch (FileAlreadyExistsException e) {
-      logger.info(String.format("%s already exists, skipping.", getShortName(finalDestination, 1)));
+      logger.info(
+          String.format(
+              "%s already exists, skipping.", FileUtils.getShortName(finalDestination, 1)));
     } catch (IOException e) {
       onError(e);
     } finally {
+      if (handled.incrementAndGet() % BATCH_QUANTITY == 0)
+        logger.info(String.format("Handled %d-th file.", handled.get()));
       subscription.request(1);
     }
-  }
-
-  private String getShortName(@NonNull Path path, int nb) {
-    return path.subpath(path.getNameCount() - nb, path.getNameCount()).toString();
   }
 
   private void moveFile(@NonNull Path finalDestination, @NonNull Pair<Path, Path> paths)

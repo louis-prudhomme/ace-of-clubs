@@ -3,15 +3,18 @@ package aofc.formatter;
 import aofc.formatter.exception.MalformedSpecificationException;
 import aofc.formatter.exception.SpecificationParsingException;
 import aofc.formatter.exception.UnevenSpecificationException;
+import aofc.formatter.provider.TagProvider;
+import aofc.formatter.provider.TagProviderMapper;
+import aofc.formatter.provider.exception.TagProviderException;
 import aofc.reader.MusicFile;
 import aofc.reader.MusicTags;
 import aofc.transponder.Sanitizer;
 import lombok.NonNull;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class SpecificationFormatter {
   private static final char MARKER_LEFT = '[';
@@ -19,7 +22,7 @@ public class SpecificationFormatter {
   private static final String EMPTY_TAG_PLACEHOLDER = "_";
 
   private final String rawSpec;
-  private final List<Function<MusicFile, Optional<String>>> providers =
+  private final List<TagProvider> providers =
       new ArrayList<>(); // todo not optional, directly strings
   private final Sanitizer sanitizer = new Sanitizer();
 
@@ -66,19 +69,23 @@ public class SpecificationFormatter {
     return specAssembler.toString();
   }
 
-  public @NonNull String format(@NonNull MusicFile file) {
-    try {
-      return String.format(
-          specification,
-          providers.stream()
-              .map(provider -> provider.apply(file))
-              .map(s -> s.orElse(EMPTY_TAG_PLACEHOLDER))
-              .map(sanitizer::sanitize)
-              .toArray(Object[]::new));
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException(e);
+  public @NonNull Path format(@NonNull Path destination, @NonNull MusicFile file)
+      throws TagProviderException {
+    return sanitizer.trimToLength(destination.resolve(Path.of(assemblePath(file))));
+  }
+
+  private @NonNull String assemblePath(@NonNull MusicFile file) throws TagProviderException {
+    var tags = new ArrayList<Optional<String>>();
+    for (var provider : providers) {
+      tags.add(provider.apply(file));
     }
+
+    return String.format(
+        specification,
+        tags.stream()
+            .map(s -> s.orElse(EMPTY_TAG_PLACEHOLDER))
+            .map(sanitizer::sanitize)
+            .toArray(Object[]::new));
   }
 
   private void checkEvenSpecOrThrow() throws UnevenSpecificationException {

@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
-  private static final int INITIAL_REQUEST_SIZE = 10;
-  private static final int PRODUCING_RATE = 10;
+  private static final int INITIAL_REQUEST_SIZE = 20;
+  private static final int PRODUCING_RATE = 100;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final Queue<Path> queue = new LinkedList<>();
@@ -49,7 +49,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
       while (queue.size() > PRODUCING_RATE)
         try {
           queue.wait();
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
           e.printStackTrace(); // todo
         }
 
@@ -72,8 +72,11 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
     logger.debug("TransponderProcessor completed.");
   }
 
-  public boolean await(int timeout) {
-    return pool.awaitQuiescence(timeout, TimeUnit.SECONDS);
+  public boolean await(int timeout) throws InterruptedException {
+    if (pool.awaitTermination(timeout, TimeUnit.SECONDS)) return true;
+
+    pool.shutdown();
+    return pool.awaitTermination(1, TimeUnit.MILLISECONDS);
   }
 
   public void submit(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {

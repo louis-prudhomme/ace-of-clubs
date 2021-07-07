@@ -20,6 +20,8 @@ public class Flagger implements Flow.Subscription {
   private final Scrapper scrapper;
   private final Thread scrapperThread;
 
+  private volatile boolean completed = false;
+
   public Flagger(
       @NonNull Flow.Subscriber<? super Path> subscriber,
       @NonNull ExecutorService executor,
@@ -40,6 +42,7 @@ public class Flagger implements Flow.Subscription {
       synchronized (queue) {
         while (queue.isEmpty() && !isCompleted()) {
           try {
+            // futures.removeIf(Future::isDone); todo
             queue.wait();
           } catch (Exception e) {
             e.printStackTrace();
@@ -56,13 +59,15 @@ public class Flagger implements Flow.Subscription {
   }
 
   private boolean isCompleted() {
-    return queue.isEmpty() && scrapper.isCompleted();
+    if (queue.isEmpty() && scrapper.isCompleted()) completed = true;
+    return completed;
   }
 
   @Override
   public void cancel() {
+    scrapper.setCompleted(true);
+    completed = true;
     subscriber.onError(new RuntimeException("cancelled"));
-    scrapperThread.interrupt();
     futures.forEach(future -> future.cancel(true));
   }
 }
