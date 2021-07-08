@@ -15,14 +15,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup GraalVM environment
-      uses: DeLaGuardo/setup-graalvm@4.0
-      with:
-        # The Java version GraalVM is based on, defaults to java8
-        java: java11
-        # The desired architecture. Options are - "amd64" (default), and "aarch64" (for linux only)
-        arch: amd64
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      - uses: actions/checkout@v2
+      - name: Setup GraalVM environment
+        uses: DeLaGuardo/setup-graalvm@4.0
+        with:
+          # The Java version GraalVM is based on, defaults to java8
+          java: java16
+          # The desired architecture. Options are - "amd64" (default), and "aarch64" (for linux only)
+          arch: amd64
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
 
