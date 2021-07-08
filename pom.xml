@@ -16,8 +16,8 @@
                 <!-- annotationProcessorPaths requires maven-compiler-plugin version 3.5 or higher -->
                 <version>${maven.compiler.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>${target.java.version}</source>
+                    <target>${target.java.version}</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>info.picocli</groupId>
@@ -63,6 +63,7 @@
         <lombok.version>1.18.20</lombok.version>
         <durian.version>3.4.0</durian.version>
         <java.version>16</java.version>
+        <target.java.version>16</target.java.version>
         <logback.version>1.2.3</logback.version>
         <mp3magic.version>0.9.1</mp3magic.version>
         <jaudiotagger.version>2.0.3</jaudiotagger.version>
