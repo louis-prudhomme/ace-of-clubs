@@ -41,6 +41,7 @@ public class FileUtils {
     }
   }
 
+  // todo probably broken
   public static String getShortName(@NonNull Path path, int nb) {
     if (path.getNameCount() > nb) throw new IllegalArgumentException();
     return path.subpath(path.getNameCount() - nb, path.getNameCount()).toString();

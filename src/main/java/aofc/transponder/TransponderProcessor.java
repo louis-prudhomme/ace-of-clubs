@@ -28,6 +28,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
 
   private Transponder transponder;
   private Flow.Subscription subscription;
+  private boolean shouldComplete = false;
 
   @Override
   public void subscribe(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {
@@ -56,7 +57,13 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
       queue.offer(path);
       queue.notify();
     }
-    subscription.request(1);
+
+    if (!isCompleted()) subscription.request(1);
+    else transponder.signalComplete();
+  }
+
+  private boolean isCompleted() {
+    return shouldComplete && queue.isEmpty();
   }
 
   @Override
@@ -68,12 +75,12 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
 
   @Override
   public void onComplete() {
-    transponder.signalComplete();
+    shouldComplete = true;
     logger.debug("TransponderProcessor completed.");
   }
 
   public boolean await(int timeout) throws InterruptedException {
-    if (pool.awaitTermination(timeout, TimeUnit.SECONDS)) return true;
+    if (pool.awaitQuiescence(timeout, TimeUnit.SECONDS)) return true;
 
     pool.shutdown();
     return pool.awaitTermination(1, TimeUnit.MILLISECONDS);

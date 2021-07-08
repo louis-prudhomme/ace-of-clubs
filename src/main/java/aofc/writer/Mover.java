@@ -43,18 +43,16 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
       else copyFile(finalDestination, paths);
 
       logger.debug(
-          String.format(
-              "Finished %s of « %s ».",
-              moveMode.toString(), FileUtils.getShortName(finalDestination, 3)));
+          "Finished {} of « {} ».",
+          moveMode.toString(),
+          FileUtils.getShortName(finalDestination, 3));
     } catch (FileAlreadyExistsException e) {
-      logger.info(
-          String.format(
-              "%s already exists, skipping.", FileUtils.getShortName(finalDestination, 1)));
+      logger.debug("{} already exists, skipping.", FileUtils.getShortName(finalDestination, 1));
     } catch (IOException e) {
       onError(e);
     } finally {
       if (handled.incrementAndGet() % BATCH_QUANTITY == 0)
-        logger.info(String.format("Handled %d-th file.", handled.get()));
+        logger.info("Handled {}-th file.", handled.get());
       subscription.request(1);
     }
   }

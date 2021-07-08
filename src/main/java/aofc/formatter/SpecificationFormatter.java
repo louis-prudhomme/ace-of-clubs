@@ -24,12 +24,14 @@ public class SpecificationFormatter {
   private final String rawSpec;
   private final List<TagProvider> providers =
       new ArrayList<>(); // todo not optional, directly strings
-  private final Sanitizer sanitizer = new Sanitizer();
+  private final Sanitizer sanitizer;
 
   private final String specification;
 
-  public SpecificationFormatter(@NonNull String rawSpec) throws SpecificationParsingException {
+  public SpecificationFormatter(@NonNull String rawSpec, @NonNull String replacementCharacter)
+      throws SpecificationParsingException {
     this.rawSpec = rawSpec;
+    this.sanitizer = new Sanitizer(replacementCharacter);
 
     checkEvenSpecOrThrow();
     this.specification = tryParseBaseTextOrThrow();
@@ -76,9 +78,7 @@ public class SpecificationFormatter {
 
   private @NonNull String assemblePath(@NonNull MusicFile file) throws TagProviderException {
     var tags = new ArrayList<Optional<String>>();
-    for (var provider : providers) {
-      tags.add(provider.apply(file));
-    }
+    for (var provider : providers) tags.add(provider.apply(file));
 
     return String.format(
         specification,

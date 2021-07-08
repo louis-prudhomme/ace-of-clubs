@@ -44,7 +44,7 @@ public class Flagger implements Flow.Subscription {
           try {
             // futures.removeIf(Future::isDone); todo
             queue.wait();
-          } catch (Exception e) {
+          } catch (InterruptedException e) {
             e.printStackTrace();
           }
         }
@@ -53,9 +53,11 @@ public class Flagger implements Flow.Subscription {
           var request = queue.poll();
           futures.add(executor.submit(() -> subscriber.onNext(request)));
         }
-        queue.notify();
+        queue.notifyAll();
       }
     }
+
+    if (isCompleted()) subscriber.onComplete();
   }
 
   private boolean isCompleted() {

@@ -1,10 +1,9 @@
 package aofc.transponder;
 
 import aofc.formatter.SpecificationFormatter;
-import aofc.formatter.exception.SpecificationFormattingException;
+import aofc.formatter.provider.exception.TagProviderException;
 import aofc.reader.MusicFileFactory;
 import aofc.reader.exception.MusicFileException;
-import aofc.utils.FileUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -18,7 +17,6 @@ import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 @RequiredArgsConstructor
 public class Transponder implements Flow.Subscription {
@@ -61,36 +59,25 @@ public class Transponder implements Flow.Subscription {
   }
 
   private void consume(@NonNull Path path) {
+    boolean sent = false;
     try {
       var file = factory.make(path);
       var filePath = formatter.format(destination, file);
       var pair = Pair.of(path, filePath);
 
-      if (!pair.getLeft().equals(pair.getRight()))
+      if (!pair.getLeft().equals(pair.getRight())) {
         futures.add(executor.submit(() -> subscriber.onNext(pair)));
-      else {
-        logNRequest(logger::info, "%s is already sorted, ignoring.", path.getFileName().toString());
-      }
+        sent = true;
+      } else logger.info("{} is already sorted, ignoring.", path.getFileName().toString());
     } catch (MusicFileException e) {
-      logNRequest(
-          logger::info,
-          "« %s » was not a music file (%s).",
-          path.getFileName().toString(),
-          e.getMessage());
-    } catch (SpecificationFormattingException e) {
-      logNRequest(
-          logger::error,
-          "Problem reading « %s » tags : %s (%s).",
-          path.getFileName().toString(),
-          e.getMessage(),
-          FileUtils.getShortName(path, 3));
+      logger.info(
+          "« {} » was not a music file ({}).", path.getFileName().toString(), e.getMessage());
+    } catch (TagProviderException e) {
+      logger.error(
+          "Problem reading « {} » tags : {}.", path.getFileName().toString(), e.getMessage());
+    } finally {
+      if (!sent) futures.add(executor.submit(() -> request(1)));
     }
-  }
-
-  private void logNRequest(
-      @NonNull Consumer<String> loggat, @NonNull String toFormat, String... args) {
-    loggat.accept(String.format(toFormat, (Object[]) args));
-    futures.add(executor.submit(() -> request(1)));
   }
 
   @Override

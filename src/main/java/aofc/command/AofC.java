@@ -2,6 +2,7 @@ package aofc.command;
 
 import aofc.command.conversion.FileExistsModeArgConverter;
 import aofc.command.conversion.MoveModeArgConverter;
+import aofc.command.conversion.ReplacerCharacterValidator;
 import aofc.formatter.SpecificationFormatter;
 import aofc.scrapper.FlaggerPublisher;
 import aofc.transponder.TransponderProcessor;
@@ -26,11 +27,12 @@ import java.util.logging.Level;
     mixinStandardHelpOptions = true,
     description = "Music file sorter.",
     version = "0.3",
-    exitCodeListHeading = "Exit codes:",
+    exitCodeListHeading = "Exit codes:\n",
     exitCodeList = {
       "0\t:\tSuccessful program execution.",
       "2\t:\tArg parsing error.",
-      "1000\t:\tProgram timed out."
+      "1000\t:\tProgram timed out.",
+      "1500\t:\tProgram was interrupted."
     })
 public class AofC implements Callable<Integer> {
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -66,6 +68,14 @@ public class AofC implements Callable<Integer> {
   private Integer timeout = 10;
 
   @Option(
+      names = {"-rc", "--replacement-char"},
+      description =
+          "String by which characters otherwise forbidden in a path will be replaced. Must not be a forbidden character. Default: ${DEFAULT-VALUE}",
+      converter = ReplacerCharacterValidator.class,
+      defaultValue = "_")
+  private String replacer = "_";
+
+  @Option(
       names = {"-fem", "--file-exist-mode"},
       description =
           "What should the program do when a music file already exists. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
@@ -87,14 +97,14 @@ public class AofC implements Callable<Integer> {
   public Integer call() {
     var originPath = FileUtils.checkPath(this.originPathArg);
     var destinationPath = FileUtils.checkPath(this.destinationPathArg, CheckPathMode.OSEF);
-    var specification = new SpecificationFormatter(specificationArg);
+    var specification = new SpecificationFormatter(specificationArg, replacer);
 
-    logger.debug(String.format("Origin « %s »", originPath.toString()));
-    logger.debug(String.format("Destination « %s »", destinationPath.toString()));
-    logger.debug(String.format("Specification « %s »", specificationArg));
-    logger.debug(String.format("Timeout %d seconds", timeout));
-    logger.debug(String.format("FileExistsMode « %s »", fileExistsMode.toString()));
-    logger.debug(String.format("MoveMode « %s »", moveMode.toString()));
+    logger.debug("Origin « {} »", originPath.toString());
+    logger.debug("Destination « {} »", destinationPath.toString());
+    logger.debug("Specification « {} »", specificationArg);
+    logger.debug("Timeout {} seconds", timeout);
+    logger.debug("FileExistsMode « {} »", fileExistsMode.toString());
+    logger.debug("MoveMode « {} »", moveMode.toString());
 
     var scrapper = new FlaggerPublisher(originPath);
     var transponder = new TransponderProcessor(specification, destinationPath);

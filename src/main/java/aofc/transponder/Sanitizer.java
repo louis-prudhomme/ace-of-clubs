@@ -1,35 +1,29 @@
 package aofc.transponder;
 
 import aofc.utils.FileUtils;
-import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.stream.Stream;
 
+@RequiredArgsConstructor
 public class Sanitizer {
-  @Getter private static final String REPLACEMENT_CHAR = "_"; // todo add to commandline options
   private static final String[] FORBIDDEN_CHARS_SPEC = {
     "<", ">", "|", "\"", "*", "\n", "\t", "[", "]", "?", ",", ";", ":"
   };
   private static final String[] EXTRA_FORBIDDEN_CHARS = {"/", "\\", "."};
-  private static final String[] FORBIDDEN_CHARS =
+  public static final String[] FORBIDDEN_CHARS =
       Stream.concat(Arrays.stream(FORBIDDEN_CHARS_SPEC), Arrays.stream(EXTRA_FORBIDDEN_CHARS))
           .toArray(String[]::new);
   private static final int MAX_PATH_LENGTH = 260;
 
-  private final Optional<String>[] args;
-
-  @SafeVarargs // todo chek fuk
-  public Sanitizer(@NonNull Optional<String>... args) {
-    this.args = args;
-  }
+  private final String replacementCharacter;
 
   public @NonNull String sanitize(@NonNull String wouldBePathPiece) {
     String res = wouldBePathPiece;
-    for (var forbidden : FORBIDDEN_CHARS) res = res.replace(forbidden, REPLACEMENT_CHAR);
+    for (var forbidden : FORBIDDEN_CHARS) res = res.replace(forbidden, replacementCharacter);
 
     return res.trim();
   }
@@ -55,9 +49,5 @@ public class Sanitizer {
 
   public boolean isAllowedInSpec(char c) {
     return Arrays.stream(FORBIDDEN_CHARS_SPEC).noneMatch(s -> s.equals(String.valueOf(c)));
-  }
-
-  public int getNbArgs() {
-    return args.length;
   }
 }
