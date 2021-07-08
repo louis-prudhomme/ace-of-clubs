@@ -62,7 +62,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lombok.version>1.18.20</lombok.version>
         <durian.version>3.4.0</durian.version>
-        <java.version>16</java.version>
+        <java.version>11</java.version>
         <target.java.version>16</target.java.version>
         <logback.version>1.2.3</logback.version>
         <mp3magic.version>0.9.1</mp3magic.version>
