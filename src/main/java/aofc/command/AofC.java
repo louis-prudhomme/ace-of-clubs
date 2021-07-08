@@ -12,6 +12,7 @@ import aofc.writer.FileExistsMode;
 import aofc.writer.MoveMode;
 import aofc.writer.Mover;
 import lombok.NonNull;
+import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -122,6 +123,7 @@ public class AofC implements Callable<Integer> {
     }
   }
 
+  @CEntryPoint
   public static void main(@NonNull String[] args) {
     System.exit(
         new CommandLine(new AofC())
