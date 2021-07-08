@@ -6,7 +6,7 @@
 
     <groupId>org.example</groupId>
     <artifactId>ace-of-clubs</artifactId>
-    <version>0.3</version>
+    <version>0.4</version>
 
     <build>
         <plugins>
@@ -32,27 +32,6 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.graalvm.nativeimage</groupId>
-                <artifactId>native-image-maven-plugin</artifactId>
-                <version>${graalvm.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>native-image</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <skip>false</skip>
-                    <imageName>${image.name}</imageName>
-                    <buildArgs>
-                        --no-fallback
-                        aofc.command.AofC
-                    </buildArgs>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -69,7 +48,6 @@
         <jaudiotagger.version>2.0.3</jaudiotagger.version>
         <picocli.version>4.6.1</picocli.version>
         <apache.commons.version>3.11</apache.commons.version>
-        <graalvm.version>21.1.0</graalvm.version>
         <slf4j.version>1.7.30</slf4j.version>
         <maven.compiler.version>3.8.1</maven.compiler.version>
     </properties>
@@ -121,12 +99,6 @@
             <artifactId>annotations</artifactId>
             <version>RELEASE</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
-            <version>${graalvm.version}</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
