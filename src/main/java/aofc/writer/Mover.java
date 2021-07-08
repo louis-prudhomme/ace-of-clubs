@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @RequiredArgsConstructor
 public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger("aofc");
 
   private static final int BATCH_QUANTITY = 100;
   private static final int INITIAL_REQUEST_SIZE = 20;

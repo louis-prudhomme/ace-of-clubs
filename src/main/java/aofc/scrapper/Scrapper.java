@@ -15,7 +15,7 @@ import java.util.Queue;
 
 @RequiredArgsConstructor
 public class Scrapper implements Runnable {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger("aofc");
   private static final int PRODUCING_RATE = 20;
 
   private final Queue<Path> queue;

@@ -20,7 +20,7 @@ import java.util.concurrent.Future;
 
 @RequiredArgsConstructor
 public class Transponder implements Flow.Subscription {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger("aofc");
 
   private final MusicFileFactory factory = new MusicFileFactory();
   private final List<Future<?>> futures = new ArrayList<>();

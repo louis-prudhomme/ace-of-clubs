@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
   private static final int INITIAL_REQUEST_SIZE = 20;
   private static final int PRODUCING_RATE = 100;
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger("aofc");
 
   private final Queue<Path> queue = new LinkedList<>();
   private final ForkJoinPool pool = new ForkJoinPool();

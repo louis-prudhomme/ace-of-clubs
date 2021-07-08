@@ -26,7 +26,7 @@ import java.util.logging.Level;
     name = "aofc",
     mixinStandardHelpOptions = true,
     description = "Music file sorter.",
-    version = "0.3",
+    version = "0.4",
     exitCodeListHeading = "Exit codes:\n",
     exitCodeList = {
       "0\t:\tSuccessful program execution.",
@@ -35,7 +35,7 @@ import java.util.logging.Level;
       "1500\t:\tProgram was interrupted."
     })
 public class AofC implements Callable<Integer> {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger("aofc");
 
   static {
     java.util.logging.Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
