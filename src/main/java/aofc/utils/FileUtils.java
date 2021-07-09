@@ -23,6 +23,10 @@ public class FileUtils {
     return getExtension(path).map(MUSIC_EXTENSIONS::contains).orElse(false);
   }
 
+  public static boolean isFileAnyOf(@NonNull Path path, @NonNull List<String> extensions) {
+    return getExtension(path).map(extensions::contains).orElse(false);
+  }
+
   public static Path checkPath(@NonNull String given) {
     return checkPath(given, CheckPathMode.CHECK_IF_EXISTS);
   }

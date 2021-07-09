@@ -1,10 +1,10 @@
 package aofc.command;
 
-import aofc.command.conversion.FileExistsModeArgConverter;
-import aofc.command.conversion.MoveModeArgConverter;
-import aofc.command.conversion.ReplacerCharacterValidator;
+import aofc.command.conversion.*;
 import aofc.formatter.SpecificationFormatter;
 import aofc.scrapper.FlaggerPublisher;
+import aofc.transcoder.TranscoderProcessor;
+import aofc.transponder.EncodingCodecs;
 import aofc.transponder.TransponderProcessor;
 import aofc.utils.CheckPathMode;
 import aofc.utils.FileUtils;
@@ -26,7 +26,7 @@ import java.util.logging.Level;
     name = "aofc",
     mixinStandardHelpOptions = true,
     description = "Music file sorter.",
-    version = "0.4",
+    version = "0.5",
     exitCodeListHeading = "Exit codes:\n",
     exitCodeList = {
       "0\t:\tSuccessful program execution.",
@@ -36,7 +36,6 @@ import java.util.logging.Level;
     })
 public class AofC implements Callable<Integer> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
-
   static {
     java.util.logging.Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
   }
@@ -76,7 +75,7 @@ public class AofC implements Callable<Integer> {
   private String replacer = "_";
 
   @Option(
-      names = {"-fem", "--file-exist-mode"},
+      names = {"-fm", "--file-exist-mode"},
       description =
           "What should the program do when a music file already exists. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
       converter = FileExistsModeArgConverter.class,
@@ -93,6 +92,23 @@ public class AofC implements Callable<Integer> {
       defaultValue = "move")
   private MoveMode moveMode;
 
+  @Option(
+      names = {"-cc", "--codec"},
+      description =
+          "What codec should the program transcode non-supported files to. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
+      converter = EncodingCodecArgConverter.class,
+      completionCandidates = EncodingCodecs.Enumeration.class,
+      defaultValue = "flac")
+  private EncodingCodecs codec = EncodingCodecs.FLAC;
+
+  @Option(
+      names = {"-tc", "--transcoding"},
+      description =
+          "Whether the program should transcode unsupported files. 0 for no transcoding, 1 for WAV transcoding, 2 for WAV and MP3. WARNING setting this option can greatly slow the program execution. Default is « ${DEFAULT-VALUE} ».",
+      converter = TranscodingModeCharacterValidator.class,
+      defaultValue = "0")
+  private int transcodingMode = 0;
+
   @Override
   public Integer call() {
     var originPath = FileUtils.checkPath(this.originPathArg);
@@ -105,18 +121,34 @@ public class AofC implements Callable<Integer> {
     logger.debug("Timeout {} seconds", timeout);
     logger.debug("FileExistsMode « {} »", fileExistsMode.toString());
     logger.debug("MoveMode « {} »", moveMode.toString());
+    logger.debug("Codec mode « {} »", switch (transcodingMode) {
+        case 0 -> "No transcoding";
+        case 1 -> "WAV only";
+        case 2 -> "WAV & MP3";
+        default -> throw new RuntimeException("not possible");});
+    logger.debug("Codec « {} »", codec.toString());
+    if (transcodingMode != 0) logger.warn("Transcoding activated");
 
     var scrapper = new FlaggerPublisher(originPath);
+    var transcoder = new TranscoderProcessor(EncodingCodecs.FLAC);
     var transponder = new TransponderProcessor(specification, destinationPath);
     var mover = new Mover(fileExistsMode, moveMode);
 
     if (timeout <= 0) timeout = Integer.MAX_VALUE;
 
-    scrapper.submit(transponder);
-    transponder.submit(mover);
-
     try {
-      return scrapper.await(timeout) && transponder.await(timeout) ? 0 : 1000;
+      if (transcodingMode == 0) {
+        scrapper.submit(transponder);
+        transponder.submit(mover);
+        return scrapper.await(timeout) && transponder.await(timeout) ? 0 : 1000;
+      } else {
+        scrapper.submit(transcoder);
+        transcoder.submit(transponder);
+        transponder.submit(mover);
+        return scrapper.await(timeout) && transcoder.await(timeout) && transponder.await(timeout)
+            ? 0
+            : 1000;
+      }
     } catch (InterruptedException e) {
       return 1500;
     }

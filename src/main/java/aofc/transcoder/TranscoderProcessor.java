@@ -1,9 +1,8 @@
-package aofc.transponder;
+package aofc.transcoder;
 
-import aofc.formatter.SpecificationFormatter;
+import aofc.transponder.EncodingCodecs;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +14,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
+public class TranscoderProcessor implements Flow.Processor<Path, Path> {
   private static final int INITIAL_REQUEST_SIZE = 20;
   private static final int PRODUCING_RATE = 100;
   private final Logger logger = LoggerFactory.getLogger("aofc");
@@ -23,29 +22,28 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   private final Queue<Path> queue = new LinkedList<>();
   private final ForkJoinPool pool = new ForkJoinPool();
 
-  private final SpecificationFormatter formatter;
-  private final Path destination;
+  private final EncodingCodecs format;
 
-  private Transponder transponder;
+  private MusicTranscoder musicTranscoder;
   private Flow.Subscription subscription;
   private boolean shouldComplete = false;
 
   @Override
-  public void subscribe(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {
-    if (this.transponder != null) throw new UnsupportedOperationException();
+  public void subscribe(Flow.Subscriber<? super Path> subscriber) {
+    if (this.musicTranscoder != null) throw new UnsupportedOperationException();
 
-    this.transponder = new Transponder(pool, queue, subscriber, formatter, destination);
-    subscriber.onSubscribe(transponder);
+    this.musicTranscoder = new MusicTranscoder(pool, queue, subscriber, format);
+    subscriber.onSubscribe(musicTranscoder);
   }
 
   @Override
-  public void onSubscribe(@NonNull Flow.Subscription subscription) {
+  public void onSubscribe(Flow.Subscription subscription) {
     this.subscription = subscription;
     subscription.request(INITIAL_REQUEST_SIZE);
   }
 
   @Override
-  public void onNext(@NonNull Path path) {
+  public void onNext(@NonNull Path item) {
     synchronized (queue) {
       while (queue.size() > PRODUCING_RATE)
         try {
@@ -54,12 +52,12 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
           e.printStackTrace(); // todo
         }
 
-      queue.offer(path);
+      queue.offer(item);
       queue.notify();
     }
 
     if (!isCompleted()) subscription.request(1);
-    else transponder.signalComplete();
+    else musicTranscoder.signalComplete();
   }
 
   private boolean isCompleted() {
@@ -69,7 +67,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   @Override
   public void onError(Throwable throwable) {
     logger.error(throwable.getMessage());
-    transponder.cancel();
+    musicTranscoder.cancel();
     throw new RuntimeException(throwable);
   }
 
@@ -79,6 +77,10 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
     logger.debug("TransponderProcessor completed.");
   }
 
+  public void submit(@NonNull Flow.Subscriber<? super Path> subscriber) {
+    pool.submit(() -> subscribe(subscriber));
+  }
+
   public boolean await(int timeout) throws InterruptedException {
     if (timeout == Integer.MAX_VALUE) {
       if (pool.awaitQuiescence(timeout, TimeUnit.SECONDS)) return true;
@@ -86,9 +88,5 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
 
     pool.shutdown();
     return pool.awaitTermination(1, TimeUnit.MILLISECONDS);
-  }
-
-  public void submit(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {
-    pool.submit(() -> subscribe(subscriber));
   }
 }

@@ -1,0 +1,16 @@
+<configuration>
+    <appender name="default" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{HH:mm:ss.SSS} [ %-5level] %logger{36} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <logger name="aofc" level="info" additivity="false">
+        <appender-ref ref="default"/>
+    </logger>
+
+    <logger name="org.jaudiotagger" level="OFF"/>
+    <logger name="ws.schild" level="OFF"/>
+</configuration>
