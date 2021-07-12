@@ -31,15 +31,30 @@ Finally, you can customize how the program sorts your file ; the default mask
 is `[album_artist]/[date] – [album]/[disc]-[track] – [title].[extension]`, but you can ditch the tags you don't need or
 change the order as well as the characters. More customization options will come in time! :)
 
+Optionally, a functionality is available to transcode WAV and MP3 files to a FLAC or Opus equivalent. It must be
+activated with a specific flag.
+
 ## But technically, how does this work ?
 
-This is a Java 16, Maven-powered and GraalVM-packaged (yet to come) project, which should run on major operating
-systems (or those that support Java at the very least).
-
-No ready packages are available to download at the moment, but you can clone the project and package it with Maven.
+This is a Java 16, Maven-powered project, which should run on major operating systems (or those that support Java at the
+very least).
 
 The program makes leverages the Java 9 Flow API to parallelize the different storing steps (finding, naming and moving
 so far).
+
+Technically, the program operates through a stream of different steps ;
+
+1. Finding the music files at the specified location
+2. Optionally, transcoding the file to another format (FLAC or Opus)
+3. Computing the new path from the file tags
+4. Writing (move or copy) the sorted music files
+
+## How to package the project ?
+
+The project is packaged through Maven. For the moment, only a JAR is available (and you can download it on the main
+page).
+
+Alternatively, you can download the project files and package them with Maven using `mvn clean install`.
 
 ## What is planned in the future ?
 
@@ -48,7 +63,7 @@ A substantially long list of improvements and features already popped while I wa
 ### Improvements
 
 - [ ] Add tests
-- [ ] Package the program
+- [ ] Package the program (GraalVM ?)
 - [ ] Add an option to specify the publisher/subscriber rates
 - [ ] Fix logger formatting (too ugly)
 - [x] Fix deadlock which randomly happens
