@@ -42,7 +42,7 @@ public class Mp3MusicFile implements MusicFile {
       case TITLE -> audioFile.getId3v2Tag().getTitle();
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
       case TRACK -> audioFile.getId3v2Tag().getTrack();
-      case DISC -> null;
+      case DISC -> audioFile.getId3v2Tag().getPartOfSet();
     };
   }
 

@@ -4,52 +4,48 @@ import aofc.formatter.SpecificationFormatter;
 import aofc.formatter.provider.exception.TagProviderException;
 import aofc.reader.MusicFileFactory;
 import aofc.reader.exception.MusicFileException;
-import aofc.utils.AbstractQueuedSubscription;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
-import java.util.Queue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Flow;
+import java.util.function.Function;
 
-public class RenamingSubscription extends AbstractQueuedSubscription<Path, Pair<Path, Path>> {
+@AllArgsConstructor
+public class Transponder implements Function<Path, Flux<Pair<Path, Path>>> {
+  private final Logger logger = LoggerFactory.getLogger("aofc");
   private final MusicFileFactory factory = new MusicFileFactory();
 
   private final SpecificationFormatter formatter;
   private final Path destination;
 
-  public RenamingSubscription(
-      @NonNull ExecutorService executor,
-      @NonNull Queue<Path> queue,
-      @NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber,
-      @NonNull SpecificationFormatter formatter,
-      @NonNull Path destination) {
-    super(executor, queue, subscriber);
-    this.formatter = formatter;
-    this.destination = destination;
-  }
-
   @Override
-  protected void consume(@NonNull Path path) {
-    boolean sent = false;
+  public @NonNull Flux<Pair<Path, Path>> apply(@NonNull Path path) {
     try {
       var file = factory.make(path);
       var filePath = formatter.format(destination, file);
       var pair = Pair.of(path, filePath);
 
       if (!pair.getLeft().equals(pair.getRight())) {
-        executor.execute(() -> subscriber.onNext(pair));
-        sent = true;
-      } else logger.trace("{} is already sorted, ignoring.", path.getFileName().toString());
+        return Flux.just(pair);
+      } else {
+        logger.trace("{} is already sorted, ignoring.", path.getFileName().toString());
+        return Flux.empty();
+      }
     } catch (MusicFileException e) {
       logger.info(
           "« {} » was not a music file ({}).", path.getFileName().toString(), e.getMessage());
+      throw new NotImplementedException();
     } catch (TagProviderException e) {
       logger.error(
           "Problem reading « {} » tags : {}.", path.getFileName().toString(), e.getMessage());
+      throw new NotImplementedException();
     } finally {
-      if (!sent) executor.execute(() -> request(1));
+      // todo handle error
     }
   }
 }

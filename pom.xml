@@ -80,7 +80,7 @@
         <maven.compiler.version>3.8.1</maven.compiler.version>
         <maven.shade.version>3.2.4</maven.shade.version>
         <jave2.version>3.1.1</jave2.version>
-        <rxjava.version>3.0.4</rxjava.version>
+        <reactor.version>2020.0.10</reactor.version>
         <jetbrains.version>22.0.0</jetbrains.version>
     </properties>
 
@@ -129,9 +129,13 @@
         </dependency>
         <!-- dev dependencies -->
         <dependency>
-            <groupId>io.reactivex.rxjava3</groupId>
-            <artifactId>rxjava</artifactId>
-            <version>${rxjava.version}</version>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -151,4 +155,16 @@
             <version>${apache.commons.version}</version>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-bom</artifactId>
+                <version>${reactor.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

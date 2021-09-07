@@ -1,16 +1,16 @@
 package aofc.command;
 
 import aofc.command.conversion.*;
+import aofc.fluxer.Fluxer;
 import aofc.formatter.SpecificationFormatter;
-import aofc.scrapper.MusicFilePublisher;
-import aofc.transcoder.TranscoderProcessor;
+import aofc.transcoder.Transcoder;
 import aofc.transponder.EncodingCodecs;
-import aofc.transponder.RenamingProcessor;
+import aofc.transponder.Transponder;
 import aofc.utils.CheckPathMode;
 import aofc.utils.FileUtils;
 import aofc.writer.FileExistsMode;
 import aofc.writer.MoveMode;
-import aofc.writer.MoverSubscriber;
+import aofc.writer.Mover;
 import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,31 +128,17 @@ public class AofC implements Callable<Integer> {
         default -> throw new RuntimeException("not possible");});
     logger.debug("Codec « {} »", codec.toString());
     if (transcodingMode != 0) logger.warn("Transcoding activated");
+    if (timeout <= 0) timeout = 0;
+    if (timeout == 0) logger.warn("No timeout");
 
-    var scrapper = new MusicFilePublisher(originPath);
-    var transponder = new RenamingProcessor(specification, destinationPath);
-    var mover = new MoverSubscriber(fileExistsMode, moveMode);
+    var transcoder = transcodingMode != 0 ? new Transcoder(EncodingCodecs.FLAC) : null;
+    var transponder = new Transponder(specification, destinationPath);
+    var mover = new Mover(fileExistsMode, moveMode);
 
-    if (timeout <= 0) timeout = Integer.MAX_VALUE; //fixme
+    var fluxer = new Fluxer(transcoder, transponder, mover, originPath);
 
-    try {
-      if (transcodingMode == 0) {
-        scrapper.submit(transponder);
-        transponder.submit(mover);
-        return scrapper.await(timeout) && transponder.await(timeout) ? 0 : 1000;
-      } else {
-        var transcoder = new TranscoderProcessor(EncodingCodecs.FLAC);
-
-        scrapper.submit(transcoder);
-        transcoder.submit(transponder);
-        transponder.submit(mover);
-        return scrapper.await(timeout) && transcoder.await(timeout) && transponder.await(timeout)
-            ? 0
-            : 1000;
-      }
-    } catch (InterruptedException e) {
-      return 1500;
-    }
+    //todo fix logs
+    return fluxer.handle(timeout);
   }
 
   public static void main(@NonNull String[] args) {
