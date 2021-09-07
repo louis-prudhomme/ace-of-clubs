@@ -15,7 +15,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
+public class RenamingProcessor implements Flow.Processor<Path, Pair<Path, Path>> {
   private static final int INITIAL_REQUEST_SIZE = 20;
   private static final int PRODUCING_RATE = 100;
   private final Logger logger = LoggerFactory.getLogger("aofc");
@@ -26,22 +26,22 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   private final SpecificationFormatter formatter;
   private final Path destination;
 
-  private Transponder transponder;
+  private RenamingSubscription renamingSubscription;
   private Flow.Subscription subscription;
   private boolean shouldComplete = false;
 
   @Override
   public void subscribe(@NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber) {
-    if (this.transponder != null) throw new UnsupportedOperationException();
+    if (this.renamingSubscription != null) throw new UnsupportedOperationException();
 
-    this.transponder = new Transponder(pool, queue, subscriber, formatter, destination);
-    subscriber.onSubscribe(transponder);
+    this.renamingSubscription =
+        new RenamingSubscription(pool, queue, subscriber, formatter, destination);
+    subscriber.onSubscribe(renamingSubscription);
   }
 
   @Override
   public void onSubscribe(@NonNull Flow.Subscription subscription) {
     this.subscription = subscription;
-    subscription.request(INITIAL_REQUEST_SIZE);
   }
 
   @Override
@@ -59,7 +59,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
     }
 
     if (!isCompleted()) subscription.request(1);
-    else transponder.signalComplete();
+    else renamingSubscription.signalComplete();
   }
 
   private boolean isCompleted() {
@@ -69,7 +69,7 @@ public class TransponderProcessor implements Flow.Processor<Path, Pair<Path, Pat
   @Override
   public void onError(Throwable throwable) {
     logger.error(throwable.getMessage());
-    transponder.cancel();
+    renamingSubscription.cancel();
     throw new RuntimeException(throwable);
   }
 

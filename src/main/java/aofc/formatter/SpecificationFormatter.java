@@ -8,7 +8,7 @@ import aofc.formatter.provider.TagProviderMapper;
 import aofc.formatter.provider.exception.TagProviderException;
 import aofc.reader.MusicFile;
 import aofc.reader.MusicTags;
-import aofc.transponder.Sanitizer;
+import aofc.transponder.PathSanitizer;
 import lombok.NonNull;
 
 import java.nio.file.Path;
@@ -24,14 +24,14 @@ public class SpecificationFormatter {
   private final String rawSpec;
   private final List<TagProvider> providers =
       new ArrayList<>(); // todo not optional, directly strings
-  private final Sanitizer sanitizer;
+  private final PathSanitizer pathSanitizer;
 
   private final String specification;
 
   public SpecificationFormatter(@NonNull String rawSpec, @NonNull String replacementCharacter)
       throws SpecificationParsingException {
     this.rawSpec = rawSpec;
-    this.sanitizer = new Sanitizer(replacementCharacter);
+    this.pathSanitizer = new PathSanitizer(replacementCharacter);
 
     checkEvenSpecOrThrow();
     this.specification = tryParseBaseTextOrThrow();
@@ -62,7 +62,7 @@ public class SpecificationFormatter {
           w8 = true;
         } else if (current == MARKER_RIGHT)
           throw new MalformedSpecificationException(rawSpec); // right is malformed
-        else if (sanitizer.isAllowedInSpec(current))
+        else if (pathSanitizer.isAllowedInSpec(current))
           specAssembler.append(current); // otherwise if correct add
         else throw new MalformedSpecificationException(rawSpec);
       }
@@ -73,7 +73,7 @@ public class SpecificationFormatter {
 
   public @NonNull Path format(@NonNull Path destination, @NonNull MusicFile file)
       throws TagProviderException {
-    return sanitizer.trimToLength(destination.resolve(Path.of(assemblePath(file))));
+    return pathSanitizer.trimToLength(destination.resolve(Path.of(assemblePath(file))));
   }
 
   private @NonNull String assemblePath(@NonNull MusicFile file) throws TagProviderException {
@@ -84,7 +84,7 @@ public class SpecificationFormatter {
         specification,
         tags.stream()
             .map(s -> s.orElse(EMPTY_TAG_PLACEHOLDER))
-            .map(sanitizer::sanitize)
+            .map(pathSanitizer::sanitize)
             .toArray(Object[]::new));
   }
 

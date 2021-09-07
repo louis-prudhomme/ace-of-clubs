@@ -3,7 +3,7 @@ package aofc.command;
 import aofc.formatter.exception.SpecificationParsingException;
 import picocli.CommandLine;
 
-public class ExceptionHandler implements CommandLine.IExecutionExceptionHandler {
+public class CommandExceptionHandler implements CommandLine.IExecutionExceptionHandler {
 
   @Override
   public int handleExecutionException(

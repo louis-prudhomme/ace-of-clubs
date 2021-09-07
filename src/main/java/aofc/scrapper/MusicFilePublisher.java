@@ -9,7 +9,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class FlaggerPublisher implements Flow.Publisher<Path> {
+public class MusicFilePublisher implements Flow.Publisher<Path> {
   private final ForkJoinPool pool = new ForkJoinPool();
 
   private final Path origin;
@@ -21,10 +21,11 @@ public class FlaggerPublisher implements Flow.Publisher<Path> {
     if (subscribed) subscriber.onError(new IllegalStateException());
     else {
       subscribed = true;
-      subscriber.onSubscribe(new Flagger(subscriber, pool, origin));
+      subscriber.onSubscribe(new MusicFileSubscription(subscriber, pool, origin));
     }
   }
 
+  // todo fix this
   public boolean await(int timeout) throws InterruptedException {
     if (timeout == Integer.MAX_VALUE) {
       if (pool.awaitQuiescence(timeout, TimeUnit.SECONDS)) return true;

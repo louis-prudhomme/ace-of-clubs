@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
-public class Sanitizer {
+public class PathSanitizer {
   private static final String[] FORBIDDEN_CHARS_SPEC = {
     "<", ">", "|", "\"", "*", "\n", "\t", "[", "]", "?", ",", ";", ":"
   };

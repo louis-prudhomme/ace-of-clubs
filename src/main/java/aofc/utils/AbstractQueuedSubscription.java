@@ -3,16 +3,12 @@ package aofc.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
-import java.util.concurrent.Future;
 
-public abstract class Transdoer<T, R> implements Flow.Subscription {
+public abstract class AbstractQueuedSubscription<T, R> implements Flow.Subscription {
   protected final Logger logger = LoggerFactory.getLogger("aofc");
-  protected final List<Future<?>> futures = new ArrayList<>();
 
   protected final ExecutorService executor;
   protected final Queue<T> queue;
@@ -21,7 +17,7 @@ public abstract class Transdoer<T, R> implements Flow.Subscription {
   protected volatile boolean shouldComplete = false;
   protected volatile boolean completed = false;
 
-  public Transdoer(
+  public AbstractQueuedSubscription(
       ExecutorService executor, Queue<T> queue, Flow.Subscriber<? super R> subscriber) {
     this.executor = executor;
     this.queue = queue;
@@ -61,7 +57,6 @@ public abstract class Transdoer<T, R> implements Flow.Subscription {
   @Override
   public void cancel() {
     completed = true;
-    futures.forEach(future -> future.cancel(true)); // todo useful ?
     logger.info("Canceling.");
   }
 }

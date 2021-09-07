@@ -2,15 +2,15 @@ package aofc.command;
 
 import aofc.command.conversion.*;
 import aofc.formatter.SpecificationFormatter;
-import aofc.scrapper.FlaggerPublisher;
+import aofc.scrapper.MusicFilePublisher;
 import aofc.transcoder.TranscoderProcessor;
 import aofc.transponder.EncodingCodecs;
-import aofc.transponder.TransponderProcessor;
+import aofc.transponder.RenamingProcessor;
 import aofc.utils.CheckPathMode;
 import aofc.utils.FileUtils;
 import aofc.writer.FileExistsMode;
 import aofc.writer.MoveMode;
-import aofc.writer.Mover;
+import aofc.writer.MoverSubscriber;
 import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,8 +115,8 @@ public class AofC implements Callable<Integer> {
     var destinationPath = FileUtils.checkPath(this.destinationPathArg, CheckPathMode.OSEF);
     var specification = new SpecificationFormatter(specificationArg, replacer);
 
-    logger.debug("Origin « {} »", originPath.toString());
-    logger.debug("Destination « {} »", destinationPath.toString());
+    logger.debug("Origin « {} »", originPath);
+    logger.debug("Destination « {} »", destinationPath);
     logger.debug("Specification « {} »", specificationArg);
     logger.debug("Timeout {} seconds", timeout);
     logger.debug("FileExistsMode « {} »", fileExistsMode.toString());
@@ -129,12 +129,11 @@ public class AofC implements Callable<Integer> {
     logger.debug("Codec « {} »", codec.toString());
     if (transcodingMode != 0) logger.warn("Transcoding activated");
 
-    var scrapper = new FlaggerPublisher(originPath);
-    var transcoder = new TranscoderProcessor(EncodingCodecs.FLAC);
-    var transponder = new TransponderProcessor(specification, destinationPath);
-    var mover = new Mover(fileExistsMode, moveMode);
+    var scrapper = new MusicFilePublisher(originPath);
+    var transponder = new RenamingProcessor(specification, destinationPath);
+    var mover = new MoverSubscriber(fileExistsMode, moveMode);
 
-    if (timeout <= 0) timeout = Integer.MAX_VALUE;
+    if (timeout <= 0) timeout = Integer.MAX_VALUE; //fixme
 
     try {
       if (transcodingMode == 0) {
@@ -142,6 +141,8 @@ public class AofC implements Callable<Integer> {
         transponder.submit(mover);
         return scrapper.await(timeout) && transponder.await(timeout) ? 0 : 1000;
       } else {
+        var transcoder = new TranscoderProcessor(EncodingCodecs.FLAC);
+
         scrapper.submit(transcoder);
         transcoder.submit(transponder);
         transponder.submit(mover);
@@ -157,7 +158,7 @@ public class AofC implements Callable<Integer> {
   public static void main(@NonNull String[] args) {
     System.exit(
         new CommandLine(new AofC())
-            .setExecutionExceptionHandler(new ExceptionHandler())
+            .setExecutionExceptionHandler(new CommandExceptionHandler())
             .execute(args));
   }
 }

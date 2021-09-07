@@ -16,7 +16,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RequiredArgsConstructor
-public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
+public class MoverSubscriber implements Flow.Subscriber<Pair<Path, Path>> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
 
   private static final int BATCH_QUANTITY = 100;
@@ -38,6 +38,8 @@ public class Mover implements Flow.Subscriber<Pair<Path, Path>> {
   public void onNext(@NonNull Pair<Path, Path> paths) {
     var finalDestination = paths.getRight();
     try {
+      logger.debug(String.format("Received %s", paths));
+
       Files.createDirectories(finalDestination.getParent());
       if (moveMode == MoveMode.MOVE) moveFile(finalDestination, paths);
       else copyFile(finalDestination, paths);

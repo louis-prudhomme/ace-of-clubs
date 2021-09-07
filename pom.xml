@@ -15,8 +15,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.version}</version>
                 <configuration>
-                    <source>15</source>
-                    <target>15</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>info.picocli</groupId>
@@ -34,7 +34,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>${maven.shade.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -71,14 +71,17 @@
         <lombok.version>1.18.20</lombok.version>
         <image.name>aofc</image.name>
         <durian.version>3.4.0</durian.version>
-        <logback.version>1.2.3</logback.version>
+        <logback.version>1.2.5</logback.version>
         <mp3magic.version>0.9.1</mp3magic.version>
         <jaudiotagger.version>2.0.3</jaudiotagger.version>
         <picocli.version>4.6.1</picocli.version>
-        <apache.commons.version>3.11</apache.commons.version>
-        <slf4j.version>1.7.30</slf4j.version>
+        <apache.commons.version>3.12.0</apache.commons.version>
+        <slf4j.version>1.7.32</slf4j.version>
         <maven.compiler.version>3.8.1</maven.compiler.version>
+        <maven.shade.version>3.2.4</maven.shade.version>
         <jave2.version>3.1.1</jave2.version>
+        <rxjava.version>3.0.4</rxjava.version>
+        <jetbrains.version>22.0.0</jetbrains.version>
     </properties>
 
     <dependencies>
@@ -126,6 +129,11 @@
         </dependency>
         <!-- dev dependencies -->
         <dependency>
+            <groupId>io.reactivex.rxjava3</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>${rxjava.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
@@ -134,7 +142,7 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
+            <version>${jetbrains.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

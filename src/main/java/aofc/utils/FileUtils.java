@@ -35,10 +35,9 @@ public class FileUtils {
     try {
       var path = Path.of(given);
       if (mode == CheckPathMode.CHECK_IF_EXISTS && !Files.isDirectory(path))
-        throw new IllegalArgumentException(
-            String.format("%s is not a directory.", path.toString()));
+        throw new IllegalArgumentException(String.format("%s is not a directory.", path));
       else if (mode == CheckPathMode.CHECK_IF_CLEAR && Files.isDirectory(path))
-        throw new IllegalArgumentException(String.format("%s already exists.", path.toString()));
+        throw new IllegalArgumentException(String.format("%s already exists.", path));
       return path;
     } catch (InvalidPathException e) {
       throw new IllegalArgumentException(String.format("%s is not a valid path", given));
@@ -47,7 +46,7 @@ public class FileUtils {
 
   // todo probably broken
   public static String getShortName(@NonNull Path path, int nb) {
-    if (path.getNameCount() > nb) throw new IllegalArgumentException();
-    return path.subpath(path.getNameCount() - nb, path.getNameCount()).toString();
+    var realNb = Math.max(path.getNameCount(), nb);
+    return path.subpath(path.getNameCount() - realNb, path.getNameCount()).toString();
   }
 }

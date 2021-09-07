@@ -1,8 +1,8 @@
 package aofc.transcoder;
 
 import aofc.transponder.EncodingCodecs;
+import aofc.utils.AbstractQueuedSubscription;
 import aofc.utils.FileUtils;
-import aofc.utils.Transdoer;
 import lombok.NonNull;
 import ws.schild.jave.Encoder;
 import ws.schild.jave.MultimediaObject;
@@ -11,17 +11,18 @@ import ws.schild.jave.encode.EncodingAttributes;
 import ws.schild.jave.info.AudioInfo;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
-public class MusicTranscoder extends Transdoer<Path, Path> {
-  private static final List<String> FORMATS_TO_ENCODE = List.of("wav", "mp3");
+public class TranscoderSubscription extends AbstractQueuedSubscription<Path, Path> {
+  private static final Set<String> FORMATS_TO_ENCODE = Set.of("wav", "mp3");
 
   private final EncodingCodecs codec;
+  private final Encoder encoder = new Encoder();
 
-  public MusicTranscoder(
+  public TranscoderSubscription(
       @NonNull ExecutorService executor,
       @NonNull Queue<Path> queue,
       @NonNull Flow.Subscriber<? super Path> subscriber,
@@ -36,17 +37,21 @@ public class MusicTranscoder extends Transdoer<Path, Path> {
     var extension = FileUtils.getExtension(transcodat).orElseThrow();
 
     if (!FORMATS_TO_ENCODE.contains(extension)) {
-      futures.add(executor.submit(() -> subscriber.onNext(transcodat)));
+      logger.debug(String.format("No need to transcode %s", transcodat));
+      executor.execute(() -> subscriber.onNext(transcodat));
       return;
     }
 
     try {
       var multimedia = new MultimediaObject(transcodat.toFile());
       var attributes = getNewAttributesFrom(multimedia.getInfo().getAudio());
-      var targetPath = getNewPath(transcodat, extension);
-      new Encoder().encode(multimedia, targetPath.toFile(), attributes);
-      futures.add(executor.submit(() -> subscriber.onNext(targetPath)));
+      var transcodedPath = getNewPath(transcodat, extension);
+      encoder.encode(multimedia, transcodedPath.toFile(), attributes);
+      logger.debug(String.format("Transcoded %s", transcodedPath));
+
+      executor.execute(() -> subscriber.onNext(transcodedPath));
     } catch (Exception e) {
+      logger.error(e.toString());
       e.printStackTrace();
     }
   }

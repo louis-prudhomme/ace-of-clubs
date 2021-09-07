@@ -24,22 +24,21 @@ public class TranscoderProcessor implements Flow.Processor<Path, Path> {
 
   private final EncodingCodecs format;
 
-  private MusicTranscoder musicTranscoder;
+  private TranscoderSubscription transcoderSubscription;
   private Flow.Subscription subscription;
   private boolean shouldComplete = false;
 
   @Override
   public void subscribe(Flow.Subscriber<? super Path> subscriber) {
-    if (this.musicTranscoder != null) throw new UnsupportedOperationException();
+    if (this.transcoderSubscription != null) throw new UnsupportedOperationException();
 
-    this.musicTranscoder = new MusicTranscoder(pool, queue, subscriber, format);
-    subscriber.onSubscribe(musicTranscoder);
+    this.transcoderSubscription = new TranscoderSubscription(pool, queue, subscriber, format);
+    subscriber.onSubscribe(transcoderSubscription);
   }
 
   @Override
   public void onSubscribe(Flow.Subscription subscription) {
     this.subscription = subscription;
-    subscription.request(INITIAL_REQUEST_SIZE);
   }
 
   @Override
@@ -56,8 +55,8 @@ public class TranscoderProcessor implements Flow.Processor<Path, Path> {
       queue.notify();
     }
 
-    if (!isCompleted()) subscription.request(1);
-    else musicTranscoder.signalComplete();
+    if (!isCompleted() && !shouldComplete) subscription.request(1);
+    else transcoderSubscription.signalComplete();
   }
 
   private boolean isCompleted() {
@@ -67,14 +66,14 @@ public class TranscoderProcessor implements Flow.Processor<Path, Path> {
   @Override
   public void onError(Throwable throwable) {
     logger.error(throwable.getMessage());
-    musicTranscoder.cancel();
+    transcoderSubscription.cancel();
     throw new RuntimeException(throwable);
   }
 
   @Override
   public void onComplete() {
     shouldComplete = true;
-    logger.debug("TransponderProcessor completed.");
+    logger.debug("TranscoderProcessor completed.");
   }
 
   public void submit(@NonNull Flow.Subscriber<? super Path> subscriber) {

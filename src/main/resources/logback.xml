@@ -7,7 +7,7 @@
         </layout>
     </appender>
 
-    <logger name="aofc" level="info" additivity="false">
+    <logger name="aofc" level="debug" additivity="false">
         <appender-ref ref="default"/>
     </logger>
 

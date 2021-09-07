@@ -14,7 +14,7 @@ import java.nio.file.Path;
 import java.util.Queue;
 
 @RequiredArgsConstructor
-public class Scrapper implements Runnable {
+public class FileScrapper implements Runnable {
   private final Logger logger = LoggerFactory.getLogger("aofc");
   private static final int PRODUCING_RATE = 20;
 

@@ -4,7 +4,7 @@ import aofc.formatter.SpecificationFormatter;
 import aofc.formatter.provider.exception.TagProviderException;
 import aofc.reader.MusicFileFactory;
 import aofc.reader.exception.MusicFileException;
-import aofc.utils.Transdoer;
+import aofc.utils.AbstractQueuedSubscription;
 import lombok.NonNull;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -13,13 +13,13 @@ import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
-public class Transponder extends Transdoer<Path, Pair<Path, Path>> {
+public class RenamingSubscription extends AbstractQueuedSubscription<Path, Pair<Path, Path>> {
   private final MusicFileFactory factory = new MusicFileFactory();
 
   private final SpecificationFormatter formatter;
   private final Path destination;
 
-  public Transponder(
+  public RenamingSubscription(
       @NonNull ExecutorService executor,
       @NonNull Queue<Path> queue,
       @NonNull Flow.Subscriber<? super Pair<Path, Path>> subscriber,
@@ -39,7 +39,7 @@ public class Transponder extends Transdoer<Path, Pair<Path, Path>> {
       var pair = Pair.of(path, filePath);
 
       if (!pair.getLeft().equals(pair.getRight())) {
-        futures.add(executor.submit(() -> subscriber.onNext(pair)));
+        executor.execute(() -> subscriber.onNext(pair));
         sent = true;
       } else logger.trace("{} is already sorted, ignoring.", path.getFileName().toString());
     } catch (MusicFileException e) {
@@ -49,7 +49,7 @@ public class Transponder extends Transdoer<Path, Pair<Path, Path>> {
       logger.error(
           "Problem reading « {} » tags : {}.", path.getFileName().toString(), e.getMessage());
     } finally {
-      if (!sent) futures.add(executor.submit(() -> request(1)));
+      if (!sent) executor.execute(() -> request(1));
     }
   }
 }
