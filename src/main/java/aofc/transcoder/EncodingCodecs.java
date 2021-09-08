@@ -1,4 +1,4 @@
-package aofc.transponder;
+package aofc.transcoder;
 
 import aofc.writer.MoveMode;
 import lombok.Getter;

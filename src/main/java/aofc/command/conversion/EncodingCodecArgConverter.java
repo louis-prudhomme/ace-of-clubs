@@ -1,6 +1,6 @@
 package aofc.command.conversion;
 
-import aofc.transponder.EncodingCodecs;
+import aofc.transcoder.EncodingCodecs;
 import picocli.CommandLine;
 
 import java.text.ParseException;

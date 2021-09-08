@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+// todo find parsing library
 public class SpecificationFormatter {
   private static final char MARKER_LEFT = '[';
   private static final char MARKER_RIGHT = ']';

@@ -39,13 +39,11 @@ public class Transponder implements Function<Path, Flux<Pair<Path, Path>>> {
     } catch (MusicFileException e) {
       logger.info(
           "« {} » was not a music file ({}).", path.getFileName().toString(), e.getMessage());
-      throw new NotImplementedException();
+      throw new NotImplementedException(); // fixme
     } catch (TagProviderException e) {
       logger.error(
           "Problem reading « {} » tags : {}.", path.getFileName().toString(), e.getMessage());
-      throw new NotImplementedException();
-    } finally {
-      // todo handle error
+      throw new NotImplementedException(); // fixme
     }
   }
 }

@@ -21,6 +21,7 @@ public class TagProviderMapper {
 
   // todo allow more customization
   public static TagProvider getProviderFor(@NonNull MusicTags tag) {
+    // todo generify
     if (tag == MusicTags.DATE)
       return iMusicFile -> {
         var dateTag = iMusicFile.getDateTag();
@@ -32,6 +33,7 @@ public class TagProviderMapper {
         }
       };
 
+    // todo generify
     if (tag == MusicTags.TRACK) return file -> formatNumbers(file::getTrackTag);
     if (tag == MusicTags.DISC) return file -> formatNumbers(file::getDiscTag);
     return iMusicFile -> iMusicFile.getTag(tag);
