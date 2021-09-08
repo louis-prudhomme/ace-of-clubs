@@ -64,14 +64,14 @@ A substantially long list of improvements and features already popped while I wa
 
 - [ ] Add tests
 - [ ] Package the program (GraalVM ?)
-- [ ] Add an option to specify the publisher/subscriber rates
 - [ ] Fix logger formatting (too ugly)
-- [x] Fix deadlock which randomly happens
-    - [ ] Fix it more ?
+    - [ ] Fix broken logger
 
 ### Features
 
 - [ ] Add a new step in the stream to convert music files (notably to FLAC or Opus, which are more easily tagged)
+    - [x] Flac
+    - [ ] Opus
 - [ ] Add a «rejected» folder
 - [ ] Formatting engine
     - [ ] Multivalued tags support
