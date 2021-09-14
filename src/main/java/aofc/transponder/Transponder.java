@@ -6,7 +6,6 @@ import aofc.reader.MusicFileFactory;
 import aofc.reader.exception.MusicFileException;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +38,11 @@ public class Transponder implements Function<Path, Flux<Pair<Path, Path>>> {
     } catch (MusicFileException e) {
       logger.info(
           "« {} » was not a music file ({}).", path.getFileName().toString(), e.getMessage());
-      throw new NotImplementedException(); // fixme
+      return Flux.empty();
     } catch (TagProviderException e) {
       logger.error(
           "Problem reading « {} » tags : {}.", path.getFileName().toString(), e.getMessage());
-      throw new NotImplementedException(); // fixme
+      return Flux.empty(); // fixme
     }
   }
 }

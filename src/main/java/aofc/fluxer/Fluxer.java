@@ -1,9 +1,8 @@
 package aofc.fluxer;
 
-import aofc.transcoder.Transcoder;
-import aofc.transponder.Transponder;
 import aofc.writer.Mover;
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,39 +10,41 @@ import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Supplier;
 
 @AllArgsConstructor
 public class Fluxer {
   private final Logger logger = LoggerFactory.getLogger("aofc");
 
-  private final Transcoder transcoder;
-  private final Transponder transponder;
+  private final Supplier<IFluxProvider> factory;
   private final Mover mover;
   private final Path origin;
 
+  private final CountDownLatch latch = new CountDownLatch(1);
+
   // todo onComplete
   // todo onError
-  public Integer handle(int timeout) {
+  @SneakyThrows
+  public Integer handle() {
     try (var files = Files.walk(origin, FileVisitOption.FOLLOW_LINKS)) {
-      var future =
-          new FutureTask<>(
-              () ->
-                  new FluxFactory()
-                      .getInstance(transcoder, transponder)
-                      .provideFor(files)
-                      .subscribe(mover));
-      future.get(timeout, TimeUnit.SECONDS);
+      factory.get().provideFor(files).subscribe(mover, this::onError, this::onComplete);
+
+      latch.await();
       return 0;
-    } catch (ExecutionException | IOException | InterruptedException e) {
+    } catch (IOException e) {
       logger.error(e.getMessage());
       e.printStackTrace();
       return 1;
-    } catch (TimeoutException e) {
-      return 1500;
     }
+  }
+
+  private void onComplete() {
+    latch.countDown();
+    logger.trace("seiofjqoidjq");
+  }
+
+  private void onError(Throwable t) {
+    logger.error(t.getMessage());
   }
 }

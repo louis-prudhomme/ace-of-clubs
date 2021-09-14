@@ -64,8 +64,8 @@ A substantially long list of improvements and features already popped while I wa
 
 - [ ] Add tests
 - [ ] Package the program (GraalVM ?)
-- [ ] Fix logger formatting (too ugly)
-    - [ ] Fix broken logger
+- [x] Fix logger formatting (too ugly)
+    - [x] Fix broken logger
 
 ### Features
 

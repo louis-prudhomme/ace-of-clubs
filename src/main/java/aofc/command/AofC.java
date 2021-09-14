@@ -1,6 +1,7 @@
 package aofc.command;
 
 import aofc.command.conversion.*;
+import aofc.fluxer.FluxFactory;
 import aofc.fluxer.Fluxer;
 import aofc.formatter.SpecificationFormatter;
 import aofc.transcoder.EncodingCodecs;
@@ -60,13 +61,6 @@ public class AofC implements Callable<Integer> {
   private String specificationArg;
 
   @Option(
-      names = {"-t", "--timeout"},
-      description =
-          "How much time do you want to wait for completion (in seconds). If zero, no timeout will be expected (the program will complete when all files are sorted). Default: ${DEFAULT-VALUE}",
-      defaultValue = "10")
-  private Integer timeout = 10;
-
-  @Option(
       names = {"-rc", "--replacement-char"},
       description =
           "String by which characters otherwise forbidden in a path will be replaced. Must not be a forbidden character. Default: ${DEFAULT-VALUE}",
@@ -75,13 +69,20 @@ public class AofC implements Callable<Integer> {
   private String replacer = "_";
 
   @Option(
-      names = {"-fm", "--file-exist-mode"},
-      description =
-          "What should the program do when a music file already exists. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
-      converter = FileExistsModeArgConverter.class,
-      completionCandidates = FileExistsMode.Enumeration.class,
-      defaultValue = "replace")
+          names = {"-fm", "--file-exist-mode"},
+          description =
+                  "What should the program do when a music file already exists. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
+          converter = FileExistsModeArgConverter.class,
+          completionCandidates = FileExistsMode.Enumeration.class,
+          defaultValue = "replace")
   private FileExistsMode fileExistsMode;
+
+  @Option(
+          names = {"-t", "--timeout"},
+          description =
+                  "How much time should the program run before stopping. Default is « ${DEFAULT-VALUE} ».",
+          defaultValue = "30")
+  private long timeout = 30;
 
   @Option(
       names = {"-mm", "--move-mode"},
@@ -115,30 +116,31 @@ public class AofC implements Callable<Integer> {
     var destinationPath = FileUtils.checkPath(this.destinationPathArg, CheckPathMode.OSEF);
     var specification = new SpecificationFormatter(specificationArg, replacer);
 
-    logger.debug("Origin « {} »", originPath);
-    logger.debug("Destination « {} »", destinationPath);
-    logger.debug("Specification « {} »", specificationArg);
-    logger.debug("Timeout {} seconds", timeout);
-    logger.debug("FileExistsMode « {} »", fileExistsMode.toString());
-    logger.debug("MoveMode « {} »", moveMode.toString());
-    logger.debug("Codec mode « {} »", switch (transcodingMode) {
+    logger.info("Origin « {} »", originPath);
+    logger.info("Destination « {} »", destinationPath);
+    logger.info("Specification « {} »", specificationArg);
+    logger.info("FileExistsMode « {} »", fileExistsMode.toString());
+    logger.info("MoveMode « {} »", moveMode.toString());
+    logger.info("Codec mode « {} »", switch (transcodingMode) {
         case 0 -> "No transcoding";
         case 1 -> "WAV only";
         case 2 -> "WAV & MP3";
         default -> throw new RuntimeException("not possible");});
-    logger.debug("Codec « {} »", codec.toString());
+    logger.info("Codec « {} »", codec.toString());
     if (transcodingMode != 0) logger.warn("Transcoding activated");
-    if (timeout <= 0) timeout = 0;
-    if (timeout == 0) logger.warn("No timeout");
+    if (timeout == 0) timeout = Long.MAX_VALUE;
+    if (timeout == Integer.MAX_VALUE) logger.warn("No timeout");
+    else logger.info("Timeout « {} »", timeout);
+
 
     var transcoder = transcodingMode != 0 ? new Transcoder(EncodingCodecs.FLAC) : null;
     var transponder = new Transponder(specification, destinationPath);
     var mover = new Mover(fileExistsMode, moveMode);
 
-    var fluxer = new Fluxer(transcoder, transponder, mover, originPath);
+    var factory = new FluxFactory(transcoder, transponder, timeout);
+    var fluxer = new Fluxer(factory::getInstance, mover, originPath);
 
-    //todo fix logs
-    return fluxer.handle(timeout);
+    return fluxer.handle();
   }
 
   public static void main(@NonNull String[] args) {
