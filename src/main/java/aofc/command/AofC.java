@@ -6,6 +6,7 @@ import aofc.fluxer.Fluxer;
 import aofc.formatter.SpecificationFormatter;
 import aofc.transcoder.EncodingCodecs;
 import aofc.transcoder.Transcoder;
+import aofc.transcoder.TranscodingModes;
 import aofc.transponder.Transponder;
 import aofc.utils.CheckPathMode;
 import aofc.utils.FileUtils;
@@ -23,6 +24,8 @@ import picocli.CommandLine.Parameters;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
+import static aofc.transcoder.TranscodingModes.NO_TRANSCODING;
+
 @Command(
     name = "aofc",
     mixinStandardHelpOptions = true,
@@ -33,14 +36,15 @@ import java.util.logging.Level;
       "0\t:\tSuccessful program execution.",
       "2\t:\tArg parsing error.",
       "1000\t:\tProgram timed out."
-            //,"1500\t:\tProgram was interrupted."
+      // ,"1500\t:\tProgram was interrupted."
     })
 public class AofC implements Callable<Integer> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
 
   private static final java.util.logging.Logger PIN_THAT_LOGGER;
+
   static {
-    PIN_THAT_LOGGER =  java.util.logging.Logger.getLogger("org.jaudiotagger");
+    PIN_THAT_LOGGER = java.util.logging.Logger.getLogger("org.jaudiotagger");
     PIN_THAT_LOGGER.setLevel(Level.OFF);
   }
 
@@ -72,19 +76,19 @@ public class AofC implements Callable<Integer> {
   private String replacer = "_";
 
   @Option(
-          names = {"-fm", "--file-exist-mode"},
-          description =
-                  "What should the program do when a music file already exists. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
-          converter = FileExistsModeArgConverter.class,
-          completionCandidates = FileExistsMode.Enumeration.class,
-          defaultValue = "replace")
+      names = {"-fm", "--file-exist-mode"},
+      description =
+          "What should the program do when a music file already exists. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
+      converter = FileExistsModeArgConverter.class,
+      completionCandidates = FileExistsMode.Enumeration.class,
+      defaultValue = "replace")
   private FileExistsMode fileExistsMode;
 
   @Option(
-          names = {"-t", "--timeout"},
-          description =
-                  "How much time should the program run before stopping. Default is « ${DEFAULT-VALUE} ».",
-          defaultValue = "30")
+      names = {"-t", "--timeout"},
+      description =
+          "How much time should the program run before stopping. Default is « ${DEFAULT-VALUE} ».",
+      defaultValue = "30")
   private long timeout = 30;
 
   @Option(
@@ -108,10 +112,11 @@ public class AofC implements Callable<Integer> {
   @Option(
       names = {"-tc", "--transcoding"},
       description =
-          "Whether the program should transcode unsupported files. 0 for no transcoding, 1 for WAV transcoding, 2 for WAV and MP3. WARNING setting this option can greatly slow the program execution. Default is « ${DEFAULT-VALUE} ».",
-      converter = TranscodingModeCharacterValidator.class,
+          "Whether the program should transcode unsupported files. WARNING setting this option can greatly slow the program execution. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
+      converter = TranscodingModeConverter.class,
+      completionCandidates = TranscodingModes.Enumeration.class,
       defaultValue = "0")
-  private int transcodingMode = 0;
+  private TranscodingModes transcoding = NO_TRANSCODING;
 
   @Override
   public Integer call() {
@@ -124,21 +129,16 @@ public class AofC implements Callable<Integer> {
     logger.info("Specification « {} »", specificationArg);
     logger.info("FileExistsMode « {} »", fileExistsMode.toString());
     logger.info("MoveMode « {} »", moveMode.toString());
-    logger.info("Codec mode « {} »", switch (transcodingMode) {
-        case 0 -> "No transcoding";
-        case 10 -> "WAV only";
-        case 01 -> "MP3 only"; //todo
-        case 11 -> "WAV & MP3";
-        default -> throw new RuntimeException("not possible");});
+    logger.info("Transcoding mode « {} »", transcoding);
     logger.info("Codec « {} »", codec.toString());
-    if (transcodingMode != 0) logger.warn("Transcoding activated");
+    if (transcoding != NO_TRANSCODING)
+      logger.warn(String.format("Transcoding activated (%s)", transcoding));
     if (timeout == 0) {
       timeout = Long.MAX_VALUE - 1;
       logger.warn("No timeout");
     } else logger.info("Timeout « {} »", timeout);
 
-
-    var transcoder = transcodingMode != 0 ? new Transcoder(EncodingCodecs.FLAC) : null;
+    var transcoder = transcoding != NO_TRANSCODING ? new Transcoder(EncodingCodecs.FLAC) : null;
     var transponder = new Transponder(specification, destinationPath);
     var mover = new Mover(fileExistsMode, moveMode);
 

@@ -1,6 +1,5 @@
 package aofc.transcoder;
 
-import aofc.writer.MoveMode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,10 @@ public enum EncodingCodecs {
 
   public static class Enumeration extends ArrayList<String> {
     public Enumeration() {
-      super(Arrays.stream(MoveMode.values()).map(MoveMode::getArg).collect(Collectors.toList()));
+      super(
+          Arrays.stream(EncodingCodecs.values())
+              .map(EncodingCodecs::getArg)
+              .collect(Collectors.toList()));
     }
   }
 }
