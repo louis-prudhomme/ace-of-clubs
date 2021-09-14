@@ -32,13 +32,16 @@ import java.util.logging.Level;
     exitCodeList = {
       "0\t:\tSuccessful program execution.",
       "2\t:\tArg parsing error.",
-      "1000\t:\tProgram timed out.",
-      "1500\t:\tProgram was interrupted."
+      "1000\t:\tProgram timed out."
+            //,"1500\t:\tProgram was interrupted."
     })
 public class AofC implements Callable<Integer> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
+
+  private static final java.util.logging.Logger PIN_THAT_LOGGER;
   static {
-    java.util.logging.Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
+    PIN_THAT_LOGGER =  java.util.logging.Logger.getLogger("org.jaudiotagger");
+    PIN_THAT_LOGGER.setLevel(Level.OFF);
   }
 
   @Parameters(

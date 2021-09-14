@@ -32,11 +32,11 @@ public class Transponder implements Function<Path, Flux<Pair<Path, Path>>> {
       if (!pair.getLeft().equals(pair.getRight())) {
         return Flux.just(pair);
       } else {
-        logger.trace("{} is already sorted, ignoring.", path.getFileName().toString());
+        logger.info("« {} » is already sorted, ignoring.", path.getFileName().toString());
         return Flux.empty();
       }
     } catch (MusicFileException e) {
-      logger.info(
+      logger.warn(
           "« {} » was not a music file ({}).", path.getFileName().toString(), e.getMessage());
       return Flux.empty();
     } catch (TagProviderException e) {

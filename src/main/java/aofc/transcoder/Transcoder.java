@@ -40,7 +40,7 @@ public class Transcoder implements Function<Path, Flux<Path>> {
       var attributes = getNewAttributesFrom(multimedia.getInfo().getAudio());
       var transcodedPath = getNewPath(transcodat, extension);
       encoder.encode(multimedia, transcodedPath.toFile(), attributes);
-      logger.debug(String.format("Transcoded %s", transcodedPath));
+      logger.debug(String.format("Transcoded « %s »", transcodedPath));
 
       return Flux.just(transcodedPath);
     } catch (Exception e) {

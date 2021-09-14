@@ -29,7 +29,7 @@ public class Mover implements Consumer<Pair<Path, Path>> {
   public void accept(@NonNull Pair<Path, Path> paths) {
     var finalDestination = paths.getRight();
     try {
-      logger.debug(String.format("Received %s", paths));
+      logger.debug(String.format("Received « %s »", paths));
 
       Files.createDirectories(finalDestination.getParent());
       if (moveMode == MoveMode.MOVE) moveFile(finalDestination, paths);
@@ -40,7 +40,7 @@ public class Mover implements Consumer<Pair<Path, Path>> {
           moveMode.toString(),
           FileUtils.getShortName(finalDestination, 3));
     } catch (FileAlreadyExistsException e) {
-      logger.debug("{} already exists, skipping.", FileUtils.getShortName(finalDestination, 1));
+      logger.info("« {} » already exists, skipping.", FileUtils.getShortName(finalDestination, 1));
     } catch (IOException e) {
       // fixme
     } finally {

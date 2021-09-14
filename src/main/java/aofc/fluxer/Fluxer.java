@@ -41,7 +41,7 @@ public class Fluxer {
 
   private void onComplete() {
     latch.countDown();
-    logger.trace("seiofjqoidjq");
+    logger.info("Finished");
   }
 
   private void onError(Throwable t) {
