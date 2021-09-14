@@ -126,24 +126,26 @@ public class AofC implements Callable<Integer> {
     logger.info("MoveMode « {} »", moveMode.toString());
     logger.info("Codec mode « {} »", switch (transcodingMode) {
         case 0 -> "No transcoding";
-        case 1 -> "WAV only";
-        case 2 -> "WAV & MP3";
+        case 10 -> "WAV only";
+        case 01 -> "MP3 only"; //todo
+        case 11 -> "WAV & MP3";
         default -> throw new RuntimeException("not possible");});
     logger.info("Codec « {} »", codec.toString());
     if (transcodingMode != 0) logger.warn("Transcoding activated");
-    if (timeout == 0) timeout = Long.MAX_VALUE;
-    if (timeout == Integer.MAX_VALUE) logger.warn("No timeout");
-    else logger.info("Timeout « {} »", timeout);
+    if (timeout == 0) {
+      timeout = Long.MAX_VALUE - 1;
+      logger.warn("No timeout");
+    } else logger.info("Timeout « {} »", timeout);
 
 
     var transcoder = transcodingMode != 0 ? new Transcoder(EncodingCodecs.FLAC) : null;
     var transponder = new Transponder(specification, destinationPath);
     var mover = new Mover(fileExistsMode, moveMode);
 
-    var factory = new FluxFactory(transcoder, transponder, timeout);
+    var factory = new FluxFactory(transcoder, transponder);
     var fluxer = new Fluxer(factory::getInstance, mover, originPath);
 
-    return fluxer.handle();
+    return fluxer.handle(timeout);
   }
 
   public static void main(@NonNull String[] args) {

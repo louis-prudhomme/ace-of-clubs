@@ -9,19 +9,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.nio.file.Files;
-import java.time.Duration;
 
 @AllArgsConstructor
 public class FluxFactory {
   @Nullable private final Transcoder transcoder;
   @NotNull private final Transponder transponder;
-  private final long timeout;
 
   public @NotNull IFluxProvider getInstance() {
     if (transcoder == null)
       return baseStream ->
           Flux.fromStream(baseStream)
-              .timeout(Duration.ofSeconds(timeout))
               .parallel()
               .runOn(Schedulers.parallel())
               .filter(Files::isRegularFile)
@@ -29,7 +26,6 @@ public class FluxFactory {
     else
       return baseStream ->
           Flux.fromStream(baseStream)
-              .timeout(Duration.ofSeconds(timeout))
               .parallel()
               .runOn(Schedulers.parallel())
               .filter(Files::isRegularFile)
