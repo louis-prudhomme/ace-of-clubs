@@ -27,7 +27,6 @@ public class FlacMusicFile implements MusicFile {
     this.path = path;
     this.audioFile = AudioFileIO.read(path.toFile());
     } catch (IOException | CannotReadException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
-      e.printStackTrace();
       throw new MusicFileException(e);
     }
   }

@@ -9,7 +9,12 @@ public class CommandExceptionHandler implements CommandLine.IExecutionExceptionH
   public int handleExecutionException(
       Exception e, CommandLine commandLine, CommandLine.ParseResult parseResult) {
 
-    commandLine.getErr().println(commandLine.getColorScheme().errorText(e.getMessage()));
+    commandLine
+        .getErr()
+        .println(
+            commandLine
+                .getColorScheme()
+                .errorText(e.getMessage() != null ? e.getMessage() : e.toString()));
     if (e instanceof SpecificationParsingException) commandLine.usage(commandLine.getOut());
 
     return commandLine.getExitCodeExceptionMapper() != null

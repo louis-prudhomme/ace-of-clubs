@@ -15,6 +15,7 @@ import ws.schild.jave.info.AudioInfo;
 
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 @AllArgsConstructor
@@ -22,8 +23,10 @@ public class Transcoder implements Function<Path, Flux<Path>> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
   private static final Set<String> FORMATS_TO_ENCODE = Set.of("wav", "mp3");
 
-  private final Encoder encoder = new Encoder();
   private final EncodingCodecs codec;
+
+  private static final int BATCH_QUANTITY = 10;
+  private static final AtomicLong handled = new AtomicLong(0);
 
   @Override
   public @NonNull Flux<Path> apply(@NonNull Path transcodat) {
@@ -35,18 +38,35 @@ public class Transcoder implements Function<Path, Flux<Path>> {
       return Flux.just(transcodat);
     }
 
+    Path transcodedPath = null;
     try {
       var multimedia = new MultimediaObject(transcodat.toFile());
       var attributes = getNewAttributesFrom(multimedia.getInfo().getAudio());
-      var transcodedPath = getNewPath(transcodat, extension);
-      encoder.encode(multimedia, transcodedPath.toFile(), attributes);
+      transcodedPath = getNewPath(transcodat, extension);
+      new Encoder().encode(multimedia, transcodedPath.toFile(), attributes);
+
       logger.info(String.format("Transcoded « %s »", transcodedPath));
+      if (handled.incrementAndGet() % BATCH_QUANTITY == 0)
+        logger.info("Handled {}-th file.", handled.get());
 
       return Flux.just(transcodedPath);
+    } catch (IllegalStateException e) {
+      logger.warn(
+          "Transcoding of « {} » interrupted by shutdown, attempting to delete the file.",
+          transcodat);
+      if (transcodedPath != null) {
+        var shaggedFile = transcodedPath.toFile();
+        if (shaggedFile.exists()) shaggedFile.deleteOnExit();
+      }
+      return Flux.empty();
     } catch (Exception e) {
-      logger.error(e.toString());
-      e.printStackTrace();
-      throw new NotImplementedException(); // fixme
+      logger.error(
+          "Could not transcode « {} » : {}",
+          transcodat,
+          e.getMessage() != null
+              ? e.getMessage()
+              : e.getCause() != null ? e.getCause() : e.toString());
+      throw new NotImplementedException(e); // fixme
     }
   }
 
