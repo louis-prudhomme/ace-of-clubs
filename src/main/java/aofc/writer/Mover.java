@@ -45,7 +45,7 @@ public class Mover implements Consumer<Pair<Path, Path>> {
       // fixme
     } finally {
       if (handled.incrementAndGet() % BATCH_QUANTITY == 0)
-        logger.info("Handled {}-th file.", handled.get());
+        logger.info("Moved {}-th file.", handled.get());
     }
   }
 

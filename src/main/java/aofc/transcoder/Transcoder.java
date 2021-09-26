@@ -45,9 +45,9 @@ public class Transcoder implements Function<Path, Flux<Path>> {
       transcodedPath = getNewPath(transcodat, extension);
       new Encoder().encode(multimedia, transcodedPath.toFile(), attributes);
 
-      logger.info(String.format("Transcoded « %s »", transcodedPath));
+      logger.debug(String.format("Transcoded « %s »", transcodedPath));
       if (handled.incrementAndGet() % BATCH_QUANTITY == 0)
-        logger.info("Handled {}-th file.", handled.get());
+        logger.info("Transcoded {}-th file.", handled.get());
 
       return Flux.just(transcodedPath);
     } catch (IllegalStateException e) {
@@ -70,6 +70,7 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     }
   }
 
+  // fixme probably broken because of windows path limitation
   private @NonNull Path getNewPath(@NonNull Path old, @NonNull String oldExt) {
     var oldFileName = old.getFileName().toString();
     var oldLength = oldFileName.length();

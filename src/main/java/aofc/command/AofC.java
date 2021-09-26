@@ -36,7 +36,7 @@ import static aofc.transcoder.TranscodingModes.NO_TRANSCODING;
       "0\t:\tSuccessful program execution.",
       "2\t:\tArg parsing error.",
       "1000\t:\tProgram timed out."
-      // ,"1500\t:\tProgram was interrupted."
+      // ,"1500\t:\tProgram was interrupted." todo
     })
 public class AofC implements Callable<Integer> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
