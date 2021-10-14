@@ -46,8 +46,10 @@ public class FlacMusicFile implements MusicFile {
   }
 
   private @Nullable String extractTag(@NonNull AudioFile tag, @NonNull FieldKey key) {
-    try {return tag.getTag().getFields(key).get(0).toString();
-      } catch (IndexOutOfBoundsException e) {
+    try {
+      // todo handle multivalued fields
+      return tag.getTag().getFields(key).get(0).toString();
+    } catch (IndexOutOfBoundsException e) {
       // todo log
       return null;
     }
