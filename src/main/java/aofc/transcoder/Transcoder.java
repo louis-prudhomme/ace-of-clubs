@@ -3,7 +3,6 @@ package aofc.transcoder;
 import aofc.utils.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -26,14 +25,15 @@ public class Transcoder implements Function<Path, Flux<Path>> {
   private final EncodingCodecs codec;
 
   private static final int BATCH_QUANTITY = 10;
+  private static final int PATH_LIMITATION = 250;
   private static final AtomicLong handled = new AtomicLong(0);
 
   @Override
   public @NonNull Flux<Path> apply(@NonNull Path transcodat) {
     // if file already has a good format, leave it be
-    var extension = FileUtils.getExtension(transcodat).orElseThrow();
+    var extension = FileUtils.getExtension(transcodat);
 
-    if (!FORMATS_TO_ENCODE.contains(extension)) {
+    if (extension.isEmpty() || !FORMATS_TO_ENCODE.contains(extension.get())) {
       logger.debug(String.format("No need to transcode %s", transcodat));
       return Flux.just(transcodat);
     }
@@ -42,12 +42,23 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     try {
       var multimedia = new MultimediaObject(transcodat.toFile());
       var attributes = getNewAttributesFrom(multimedia.getInfo().getAudio());
-      transcodedPath = getNewPath(transcodat, extension);
+      transcodedPath = getNewPath(transcodat, extension.get());
+
+      var transcodedPathSize = transcodedPath.toString().length();
+      if (transcodedPathSize > PATH_LIMITATION) { // fixme there must be a way to circumvent this…
+        logger.error(
+            "Could not transcode « {} » because the new path is too long ({} = {} characters).",
+            transcodat,
+            transcodedPath,
+            transcodedPathSize);
+        return Flux.empty();
+      }
+
       new Encoder().encode(multimedia, transcodedPath.toFile(), attributes);
 
-      logger.info(String.format("Transcoded « %s »", transcodedPath));
+      logger.debug(String.format("Transcoded « %s »", transcodedPath));
       if (handled.incrementAndGet() % BATCH_QUANTITY == 0)
-        logger.info("Handled {}-th file.", handled.get());
+        logger.info("Transcoded {}-th file.", handled.get());
 
       return Flux.just(transcodedPath);
     } catch (IllegalStateException e) {
@@ -66,10 +77,11 @@ public class Transcoder implements Function<Path, Flux<Path>> {
           e.getMessage() != null
               ? e.getMessage()
               : e.getCause() != null ? e.getCause() : e.toString());
-      throw new NotImplementedException(e); // fixme
+      return Flux.empty();
     }
   }
 
+  // fixme probably broken because of windows path limitation
   private @NonNull Path getNewPath(@NonNull Path old, @NonNull String oldExt) {
     var oldFileName = old.getFileName().toString();
     var oldLength = oldFileName.length();
