@@ -16,8 +16,6 @@ take just enough time to brew (maybe drink) a coffee.
 
 ## Okay, how does this work ?
 
-```warning, experimental and not fully mature yet; you might be better off with Maven commands (see below)```
-
 The runnable is pretty straightforward. Put it in your PATH (or invoke it from the folder where it is located). At least
 two arguments must be provided :
 
@@ -31,7 +29,7 @@ Finally, you can customize how the program sorts your file ; the default mask
 is `[album_artist]/[date] – [album]/[disc]-[track] – [title].[extension]`, but you can ditch the tags you don't need or
 change the order as well as the characters. More customization options will come in time! :)
 
-Optionally, a functionality is available to transcode WAV and MP3 files to a FLAC or Opus equivalent. It must be
+Optionally, a functionality is available to transcode WAV and MP3 files to FLAC. It must be
 activated with a specific flag.
 
 ## But technically, how does this work ?
@@ -66,6 +64,9 @@ A substantially long list of improvements and features already popped while I wa
 - [ ] Package the program (GraalVM ?)
 - [x] Fix logger formatting (too ugly)
     - [x] Fix broken logger
+- [ ] Improve program safety 
+  - [ ] ...by correctly handling exceptions everywhere
+  - [ ] ...by adding top-level exception handlers
 
 ### Features
 
@@ -74,7 +75,9 @@ A substantially long list of improvements and features already popped while I wa
     - [ ] Opus
 - [ ] Add a «rejected» folder
 - [ ] Formatting engine
-    - [ ] Multivalued tags support
-    - [ ] More tags
-    - [ ] More customization options (including of the tag formatting itself)
+  - [x] Extract simple tags
+  - [ ] Extract multivalued tags (with the `!` operator)
+  - [ ] Truncate tags (with the `{x}:<tag>:{y}` operator)
+  - [ ] Pad tags (with the `<tag>{<char>,<x>}`)
+  - [ ] Add customization for fallback characters (instead of `_`)
 - [ ] Add automatic tagging (through an online service)
