@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import ws.schild.jave.Encoder;
+import ws.schild.jave.EncoderException;
 import ws.schild.jave.MultimediaObject;
 import ws.schild.jave.encode.AudioAttributes;
 import ws.schild.jave.encode.EncodingAttributes;
@@ -20,8 +21,9 @@ import java.util.function.Function;
 @AllArgsConstructor
 public class Transcoder implements Function<Path, Flux<Path>> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
-  private static final Set<String> FORMATS_TO_ENCODE = Set.of("wav", "mp3");
+  private static final Set<String> FORMATS_TO_TRANSCODE = Set.of("wav", "mp3");
 
+  private final boolean ignoreGoodEncodings;
   private final EncodingCodecs codec;
 
   private static final int BATCH_QUANTITY = 10;
@@ -33,7 +35,8 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     // if file already has a good format, leave it be
     var extension = FileUtils.getExtension(transcodat);
 
-    if (extension.isEmpty() || !FORMATS_TO_ENCODE.contains(extension.get())) {
+    if (extension.isEmpty()
+        || (!FORMATS_TO_TRANSCODE.contains(extension.get()) && !ignoreGoodEncodings)) {
       logger.debug(String.format("No need to transcode %s", transcodat));
       return Flux.just(transcodat);
     }
@@ -70,6 +73,13 @@ public class Transcoder implements Function<Path, Flux<Path>> {
         if (shaggedFile.exists()) shaggedFile.deleteOnExit();
       }
       return Flux.empty();
+    } catch (EncoderException e) {
+      logger.warn("Transcoding of « {} » failed, attempting to delete the file.", transcodat);
+      if (transcodedPath != null) {
+        var shaggedFile = transcodedPath.toFile();
+        if (shaggedFile.exists()) shaggedFile.deleteOnExit();
+      }
+      return Flux.error(e);
     } catch (Exception e) {
       logger.error(
           "Could not transcode « {} » : {}",
@@ -86,17 +96,23 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     var oldFileName = old.getFileName().toString();
     var oldLength = oldFileName.length();
 
-    var fn = oldFileName.substring(0, oldLength - oldExt.length()) + codec.getArg();
+    var fn =
+        oldFileName.substring(0, oldLength - oldExt.length())
+            + MusicFileExtension.FromEncodingCodec(codec).getArg();
     return old.getParent().resolve(fn);
   }
 
+  private static int OPUS_DEFAULT_BIT_RATE = 192_000;
+
   private @NonNull EncodingAttributes getNewAttributesFrom(@NonNull AudioInfo object) {
+    var bitrate = codec == EncodingCodecs.OPUS ? OPUS_DEFAULT_BIT_RATE : object.getBitRate();
+
     var res = new EncodingAttributes();
     var audio = new AudioAttributes();
     res.setAudioAttributes(audio);
     audio.setCodec(codec.getArg());
-    audio.setBitRate(object.getBitRate());
-    audio.setSamplingRate(object.getSamplingRate());
+    audio.setBitRate(bitrate);
+    if (codec == EncodingCodecs.FLAC) audio.setSamplingRate(object.getSamplingRate());
     audio.setChannels(object.getChannels());
     return res;
   }

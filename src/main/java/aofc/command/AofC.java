@@ -92,6 +92,13 @@ public class AofC implements Callable<Integer> {
   private long timeout = 30;
 
   @Option(
+      names = {"-ci", "--ignore-good"},
+      description =
+          "Should the program ignore \"good encodings\". Default is « ${DEFAULT-VALUE} ».",
+      defaultValue = "0")
+  private int ignoreGoodEncodings = 0;
+
+  @Option(
       names = {"-mm", "--move-mode"},
       description =
           "Whether the program should copy or move the files. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
@@ -138,7 +145,8 @@ public class AofC implements Callable<Integer> {
       logger.warn("No timeout");
     } else logger.info("Timeout « {} »", timeout);
 
-    var transcoder = transcoding != NO_TRANSCODING ? new Transcoder(EncodingCodecs.FLAC) : null;
+    var transcoder =
+        transcoding != NO_TRANSCODING ? new Transcoder(ignoreGoodEncodings > 0, codec) : null;
     var transponder = new Transponder(specification, destinationPath);
     var mover = new Mover(fileExistsMode, moveMode);
 

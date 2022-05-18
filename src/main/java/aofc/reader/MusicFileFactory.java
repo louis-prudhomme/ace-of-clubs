@@ -16,7 +16,7 @@ public class MusicFileFactory {
     
     return switch (extension.get().toLowerCase(Locale.ROOT)) {
       case "mp3" -> new Mp3MusicFile(path);
-      case "flac", "m4a" -> new FlacMusicFile(path);
+      case "flac", "m4a", "ogg" -> new FlacMusicFile(path);
       case "wav" -> throw new UnsupportedFormatException("wav");
       default -> throw new MusicFileException(path.toString());
     };
