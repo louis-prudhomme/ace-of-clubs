@@ -1,5 +1,6 @@
 package aofc.transcoder;
 
+import aofc.reader.MusicFileFactory;
 import aofc.utils.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -21,6 +22,7 @@ import java.util.function.Function;
 @AllArgsConstructor
 public class Transcoder implements Function<Path, Flux<Path>> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
+  private static final int OPUS_DEFAULT_BIT_RATE = 192_000;
   private static final Set<String> FORMATS_TO_TRANSCODE = Set.of("wav", "mp3");
 
   private final boolean ignoreGoodEncodings;
@@ -41,9 +43,15 @@ public class Transcoder implements Function<Path, Flux<Path>> {
       return Flux.just(transcodat);
     }
 
+    if (!MusicFileFactory.isMusicFile(transcodat)) {
+      logger.warn("« {} » was not a music file.", transcodat.getFileName().toString());
+      return Flux.empty();
+    }
+
     Path transcodedPath = null;
     try {
       var multimedia = new MultimediaObject(transcodat.toFile());
+      var z = multimedia.getInfo().getMetadata();
       var attributes = getNewAttributesFrom(multimedia.getInfo().getAudio());
       transcodedPath = getNewPath(transcodat, extension.get());
 
@@ -102,13 +110,12 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     return old.getParent().resolve(fn);
   }
 
-  private static int OPUS_DEFAULT_BIT_RATE = 192_000;
-
   private @NonNull EncodingAttributes getNewAttributesFrom(@NonNull AudioInfo object) {
     var bitrate = codec == EncodingCodecs.OPUS ? OPUS_DEFAULT_BIT_RATE : object.getBitRate();
 
     var res = new EncodingAttributes();
     var audio = new AudioAttributes();
+
     res.setAudioAttributes(audio);
     audio.setCodec(codec.getArg());
     audio.setBitRate(bitrate);
