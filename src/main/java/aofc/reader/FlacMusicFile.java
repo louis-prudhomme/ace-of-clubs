@@ -11,6 +11,7 @@ import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.TagException;
+import org.jaudiotagger.tag.TagField;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class FlacMusicFile implements MusicFile {
     try {
     this.path = path;
     this.audioFile = AudioFileIO.read(path.toFile());
-    } catch (IOException | CannotReadException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
+    } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
       throw new MusicFileException(e);
     }
   }
@@ -40,6 +41,9 @@ public class FlacMusicFile implements MusicFile {
       case DATE -> extractTag(audioFile, FieldKey.YEAR);
       case TITLE -> extractTag(audioFile, FieldKey.TITLE);
       case EXTENSION -> FileUtils.getExtension(path).orElse(null);
+      case COMPOSER -> extractTag(audioFile, FieldKey.COMPOSER);
+      case PUBLISHER -> extractTag(audioFile, FieldKey.PRODUCER);
+      case GENRE -> extractTag(audioFile, FieldKey.GENRE);
       case TRACK -> extractTag(audioFile, FieldKey.TRACK);
       case DISC -> extractTag(audioFile, FieldKey.DISC_NO);
     });
@@ -48,7 +52,10 @@ public class FlacMusicFile implements MusicFile {
   private @Nullable String extractTag(@NonNull AudioFile tag, @NonNull FieldKey key) {
     try {
       // todo handle multivalued fields
-      return tag.getTag().getFields(key).get(0).toString();
+      return tag.getTag().getFields(key).stream()
+              .map(TagField::toString)
+              .reduce((tagField, tagField2) -> String.join(";", tagField, tagField2))
+              .orElse(null);
     } catch (IndexOutOfBoundsException e) {
       // todo log
       return null;

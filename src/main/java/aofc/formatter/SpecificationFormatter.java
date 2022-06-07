@@ -77,6 +77,10 @@ public class SpecificationFormatter {
     return pathSanitizer.trimToLength(destination.resolve(Path.of(assemblePath(file))));
   }
 
+  public @NonNull Path formatOgg(@NonNull Path destination, @NonNull Path source) {
+    return destination.resolve(source.getFileName());
+  }
+
   private @NonNull String assemblePath(@NonNull MusicFile file) throws TagProviderException {
     var tags = new ArrayList<Optional<String>>();
     for (var provider : providers) tags.add(provider.apply(file));

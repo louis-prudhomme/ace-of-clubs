@@ -1,9 +1,14 @@
 package aofc.transcoder;
 
+import aofc.formatter.MusicFileVorbisTags;
+import aofc.reader.MusicFile;
 import aofc.reader.MusicFileFactory;
+import aofc.reader.MusicTags;
 import aofc.utils.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import org.apache.commons.lang3.tuple.Pair;
+import org.gagravarr.flac.FlacNativeFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -13,17 +18,22 @@ import ws.schild.jave.MultimediaObject;
 import ws.schild.jave.encode.AudioAttributes;
 import ws.schild.jave.encode.EncodingAttributes;
 import ws.schild.jave.info.AudioInfo;
+import org.gagravarr.flac.FlacFile;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class Transcoder implements Function<Path, Flux<Path>> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
   private static final int OPUS_DEFAULT_BIT_RATE = 192_000;
   private static final Set<String> FORMATS_TO_TRANSCODE = Set.of("wav", "mp3");
+
+  private final MusicFileFactory factory = new MusicFileFactory();
 
   private final boolean ignoreGoodEncodings;
   private final EncodingCodecs codec;
@@ -51,8 +61,13 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     Path transcodedPath = null;
     try {
       var multimedia = new MultimediaObject(transcodat.toFile());
-      var z = multimedia.getInfo().getMetadata();
       var attributes = getNewAttributesFrom(multimedia.getInfo().getAudio());
+
+      if (codec == EncodingCodecs.OPUS) {
+        var flac = new FlacNativeFile(transcodat.toFile());
+        var tags = flac.getTags();
+      }
+
       transcodedPath = getNewPath(transcodat, extension.get());
 
       var transcodedPathSize = transcodedPath.toString().length();
@@ -122,5 +137,20 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     if (codec == EncodingCodecs.FLAC) audio.setSamplingRate(object.getSamplingRate());
     audio.setChannels(object.getChannels());
     return res;
+  }
+
+  private @NonNull Map<String, String> getNewMultimediaAttributes(
+      @NonNull MusicFile oldMusicFile, @NonNull MultimediaObject multimediaObject)
+      throws EncoderException {
+    var oldMetaData = multimediaObject.getInfo().getMetadata();
+    var tags =
+        MusicTags.getUbiquitousTags().stream()
+            .map(tag -> Pair.of(MusicFileVorbisTags.convert(tag), oldMusicFile.getTag(tag)))
+            .filter(tuple -> tuple.getKey().isPresent())
+            .collect(
+                Collectors.toMap(
+                    tuple -> tuple.getLeft().get().getKey(), tuple -> tuple.getRight().orElse("")));
+    tags.forEach((key, value) -> oldMetaData.merge(key, value, (v1, v2) -> v2));
+    return tags;
   }
 }

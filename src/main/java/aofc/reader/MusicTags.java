@@ -18,6 +18,9 @@ public enum MusicTags {
   TITLE("title"),
   EXTENSION("extension"),
   DISC("disc"),
+  COMPOSER("composer"),
+  PUBLISHER("publisher"),
+  GENRE("genre"),
   TRACK("track");
 
   @Getter private final String key;
