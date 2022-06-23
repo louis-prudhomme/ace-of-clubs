@@ -4,7 +4,7 @@ import aofc.command.conversion.*;
 import aofc.fluxer.FluxFactory;
 import aofc.fluxer.Fluxer;
 import aofc.formatter.SpecificationFormatter;
-import aofc.transcoder.EncodingCodecs;
+import aofc.transcoder.Codec;
 import aofc.transcoder.Transcoder;
 import aofc.transcoder.TranscodingModes;
 import aofc.transponder.Transponder;
@@ -112,9 +112,9 @@ public class AofC implements Callable<Integer> {
       description =
           "What codec should the program transcode non-supported files to. Must be one of « ${COMPLETION-CANDIDATES} ». Default is « ${DEFAULT-VALUE} ».",
       converter = EncodingCodecArgConverter.class,
-      completionCandidates = EncodingCodecs.Enumeration.class,
+      completionCandidates = Codec.Enumeration.class,
       defaultValue = "flac")
-  private EncodingCodecs codec = EncodingCodecs.FLAC;
+  private Codec codec = Codec.FLAC;
 
   @Option(
       names = {"-tc", "--transcoding"},
@@ -127,8 +127,8 @@ public class AofC implements Callable<Integer> {
 
   @Override
   public Integer call() {
-    var originPath = FileUtils.checkPath(this.originPathArg);
-    var destinationPath = FileUtils.checkPath(this.destinationPathArg, CheckPathMode.OSEF);
+    var originPath = FileUtils.checkPath(originPathArg);
+    var destinationPath = FileUtils.checkPath(destinationPathArg, CheckPathMode.OSEF);
     var specification = new SpecificationFormatter(specificationArg, replacer);
 
     logger.info("Origin « {} »", originPath);

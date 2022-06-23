@@ -11,7 +11,7 @@ public enum MusicFileExtension {
 
     @Getter private final String arg;
 
-    public static MusicFileExtension FromEncodingCodec(EncodingCodecs codec) {
+    public static MusicFileExtension FromEncodingCodec(Codec codec) {
         return switch (codec) {
             case FLAC -> FLAC;
             case OPUS -> OPUS;

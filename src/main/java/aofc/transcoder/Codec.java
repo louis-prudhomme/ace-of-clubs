@@ -11,13 +11,13 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
-public enum EncodingCodecs {
+public enum Codec {
   FLAC("flac"),
   OPUS("libopus");
 
   @Getter private final String arg;
 
-  public static EncodingCodecs parseFrom(@NonNull String s) throws ParseException {
+  public static Codec parseFrom(@NonNull String s) throws ParseException {
     return Arrays.stream(values())
         .filter(modes -> modes.arg.equals(s.toLowerCase(Locale.ROOT)))
         .findFirst()
@@ -26,17 +26,14 @@ public enum EncodingCodecs {
 
   public static @NonNull String concatenate(@NonNull String separator) {
     return Arrays.stream(values())
-        .map(EncodingCodecs::getArg)
+        .map(Codec::getArg)
         .reduce((moveMode, moveMode2) -> String.join(separator, moveMode, moveMode2))
         .orElseThrow();
   }
 
   public static class Enumeration extends ArrayList<String> {
     public Enumeration() {
-      super(
-          Arrays.stream(EncodingCodecs.values())
-              .map(EncodingCodecs::getArg)
-              .collect(Collectors.toList()));
+      super(Arrays.stream(Codec.values()).map(Codec::getArg).collect(Collectors.toList()));
     }
   }
 }

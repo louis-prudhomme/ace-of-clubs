@@ -4,8 +4,9 @@ import aofc.formatter.MusicFileVorbisTags;
 import aofc.reader.MusicFile;
 import aofc.reader.MusicFileFactory;
 import aofc.reader.MusicTags;
+import aofc.transcoder.params.TranscodeParamsGenerator;
+import aofc.transcoder.params.TranscodeParamsGeneratorFactory;
 import aofc.utils.FileUtils;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.tuple.Pair;
 import org.gagravarr.flac.FlacNativeFile;
@@ -15,10 +16,6 @@ import reactor.core.publisher.Flux;
 import ws.schild.jave.Encoder;
 import ws.schild.jave.EncoderException;
 import ws.schild.jave.MultimediaObject;
-import ws.schild.jave.encode.AudioAttributes;
-import ws.schild.jave.encode.EncodingAttributes;
-import ws.schild.jave.info.AudioInfo;
-import org.gagravarr.flac.FlacFile;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -27,20 +24,23 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
 public class Transcoder implements Function<Path, Flux<Path>> {
   private final Logger logger = LoggerFactory.getLogger("aofc");
-  private static final int OPUS_DEFAULT_BIT_RATE = 192_000;
   private static final Set<String> FORMATS_TO_TRANSCODE = Set.of("wav", "mp3");
 
-  private final MusicFileFactory factory = new MusicFileFactory();
+  private static final AtomicLong handled = new AtomicLong(0);
+  private static final int BATCH_QUANTITY = 10;
 
   private final boolean ignoreGoodEncodings;
-  private final EncodingCodecs codec;
+  private final Codec codec;
+  private final TranscodeParamsGenerator paramsGenerator;
 
-  private static final int BATCH_QUANTITY = 10;
-  private static final int PATH_LIMITATION = 250;
-  private static final AtomicLong handled = new AtomicLong(0);
+  public Transcoder(boolean ignoreGoodEncodings, Codec codec) {
+    this.ignoreGoodEncodings = ignoreGoodEncodings;
+    this.codec = codec;
+
+    this.paramsGenerator = new TranscodeParamsGeneratorFactory().generateFor(this.codec);
+  }
 
   @Override
   public @NonNull Flux<Path> apply(@NonNull Path transcodat) {
@@ -48,47 +48,36 @@ public class Transcoder implements Function<Path, Flux<Path>> {
     var extension = FileUtils.getExtension(transcodat);
 
     if (extension.isEmpty()
-        || (!FORMATS_TO_TRANSCODE.contains(extension.get()) && !ignoreGoodEncodings)) {
-      logger.debug(String.format("No need to transcode %s", transcodat));
+        || (!FORMATS_TO_TRANSCODE.contains(extension.get()) && !this.ignoreGoodEncodings)) {
+      this.logger.debug(String.format("No need to transcode %s", transcodat));
       return Flux.just(transcodat);
     }
 
     if (!MusicFileFactory.isMusicFile(transcodat)) {
-      logger.warn("« {} » was not a music file.", transcodat.getFileName().toString());
+      this.logger.warn("« {} » was not a music file.", transcodat.getFileName().toString());
       return Flux.empty();
     }
 
     Path transcodedPath = null;
     try {
       var multimedia = new MultimediaObject(transcodat.toFile());
-      var attributes = getNewAttributesFrom(multimedia.getInfo().getAudio());
+      var attributes = this.paramsGenerator.getNewAttributesFrom(multimedia.getInfo().getAudio());
 
-      if (codec == EncodingCodecs.OPUS) {
+      if (this.codec == Codec.OPUS) {
         var flac = new FlacNativeFile(transcodat.toFile());
         var tags = flac.getTags();
       }
 
-      transcodedPath = getNewPath(transcodat, extension.get());
-
-      var transcodedPathSize = transcodedPath.toString().length();
-      if (transcodedPathSize > PATH_LIMITATION) { // fixme there must be a way to circumvent this…
-        logger.error(
-            "Could not transcode « {} » because the new path is too long ({} = {} characters).",
-            transcodat,
-            transcodedPath,
-            transcodedPathSize);
-        return Flux.empty();
-      }
-
+      transcodedPath = this.getNewPath(transcodat, extension.get());
       new Encoder().encode(multimedia, transcodedPath.toFile(), attributes);
 
-      logger.debug(String.format("Transcoded « %s »", transcodedPath));
+      this.logger.debug(String.format("Transcoded « %s »", transcodedPath));
       if (handled.incrementAndGet() % BATCH_QUANTITY == 0)
-        logger.info("Transcoded {}-th file.", handled.get());
+        this.logger.info("Transcoded {}-th file.", handled.get());
 
       return Flux.just(transcodedPath);
     } catch (IllegalStateException e) {
-      logger.warn(
+      this.logger.warn(
           "Transcoding of « {} » interrupted by shutdown, attempting to delete the file.",
           transcodat);
       if (transcodedPath != null) {
@@ -97,14 +86,14 @@ public class Transcoder implements Function<Path, Flux<Path>> {
       }
       return Flux.empty();
     } catch (EncoderException e) {
-      logger.warn("Transcoding of « {} » failed, attempting to delete the file.", transcodat);
+      this.logger.warn("Transcoding of « {} » failed, attempting to delete the file.", transcodat);
       if (transcodedPath != null) {
         var shaggedFile = transcodedPath.toFile();
         if (shaggedFile.exists()) shaggedFile.deleteOnExit();
       }
       return Flux.error(e);
     } catch (Exception e) {
-      logger.error(
+      this.logger.error(
           "Could not transcode « {} » : {}",
           transcodat,
           e.getMessage() != null
@@ -121,22 +110,8 @@ public class Transcoder implements Function<Path, Flux<Path>> {
 
     var fn =
         oldFileName.substring(0, oldLength - oldExt.length())
-            + MusicFileExtension.FromEncodingCodec(codec).getArg();
+            + MusicFileExtension.FromEncodingCodec(this.codec).getArg();
     return old.getParent().resolve(fn);
-  }
-
-  private @NonNull EncodingAttributes getNewAttributesFrom(@NonNull AudioInfo object) {
-    var bitrate = codec == EncodingCodecs.OPUS ? OPUS_DEFAULT_BIT_RATE : object.getBitRate();
-
-    var res = new EncodingAttributes();
-    var audio = new AudioAttributes();
-
-    res.setAudioAttributes(audio);
-    audio.setCodec(codec.getArg());
-    audio.setBitRate(bitrate);
-    if (codec == EncodingCodecs.FLAC) audio.setSamplingRate(object.getSamplingRate());
-    audio.setChannels(object.getChannels());
-    return res;
   }
 
   private @NonNull Map<String, String> getNewMultimediaAttributes(
